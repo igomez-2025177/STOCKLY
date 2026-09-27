@@ -3,14 +3,7 @@ import { prisma } from "../config/prisma";
 import { hashPassword, comparePassword } from "../utils/password";
 import { generateToken } from "../utils/jwt";
 import { AuthRequest } from "../middlewares/auth.middleware";
-
-const ALLOWED_EMAIL_DOMAINS = ["gmail.com", "hotmail.com", "outlook.com", "kinal.edu.gt"];
-const MIN_PASSWORD = 8;
-
-function isEmailDomainAllowed(correo: string): boolean {
-  const domain = correo.split("@")[1]?.toLowerCase();
-  return !!domain && ALLOWED_EMAIL_DOMAINS.includes(domain);
-}
+import { ALLOWED_EMAIL_DOMAINS, MIN_PASSWORD, isEmailDomainAllowed, limpiarCorreo } from "../utils/correo";
 
 export async function registroAbierto(_req: Request, res: Response) {
   try {
@@ -30,7 +23,7 @@ export async function register(req: Request, res: Response) {
       return res.status(400).json({ error: "Faltan campos: nombre, correo, password" });
     }
 
-    const correoLimpio = String(correo).trim().toLowerCase();
+    const correoLimpio = limpiarCorreo(correo);
 
     if (!isEmailDomainAllowed(correoLimpio)) {
       return res.status(400).json({
@@ -89,9 +82,7 @@ export async function login(req: Request, res: Response) {
       return res.status(400).json({ error: "Faltan campos: correo, password" });
     }
 
-    const correoLimpio = String(correo).trim().toLowerCase();
-
-    const user = await prisma.usuario.findUnique({ where: { correo: correoLimpio } });
+    const user = await prisma.usuario.findUnique({ where: { correo: limpiarCorreo(correo) } });
 
     if (!user) {
       return res.status(401).json({ error: "Credenciales inválidas" });
@@ -103,7 +94,6 @@ export async function login(req: Request, res: Response) {
       return res.status(401).json({ error: "Credenciales inválidas" });
     }
 
-    // se revisa despues de la contraseña pa no andar diciendo que correos existen
     if (!user.activo) {
       return res.status(403).json({ error: "Tu cuenta está desactivada, habla con el administrador" });
     }
@@ -142,6 +132,48 @@ export async function me(req: AuthRequest, res: Response) {
     return res.status(200).json({ user });
   } catch (error) {
     console.error("Error en me:", error);
+    return res.status(500).json({ error: "Error interno del servidor" });
+  }
+}
+
+export async function cambiarMiPassword(req: AuthRequest, res: Response) {
+  try {
+    const { passwordActual, passwordNuevo } = req.body;
+
+    if (!passwordActual || !passwordNuevo) {
+      return res.status(400).json({ error: "Faltan campos: passwordActual, passwordNuevo" });
+    }
+
+    if (String(passwordNuevo).length < MIN_PASSWORD) {
+      return res.status(400).json({
+        error: `La contraseña nueva debe tener al menos ${MIN_PASSWORD} caracteres`,
+      });
+    }
+
+    const user = await prisma.usuario.findUnique({ where: { id: req.user!.userId } });
+
+    if (!user) {
+      return res.status(404).json({ error: "Usuario no encontrado" });
+    }
+
+    const coincide = await comparePassword(passwordActual, user.password);
+
+    if (!coincide) {
+      return res.status(401).json({ error: "La contraseña actual no es correcta" });
+    }
+
+    if (passwordActual === passwordNuevo) {
+      return res.status(400).json({ error: "La contraseña nueva tiene que ser distinta a la actual" });
+    }
+
+    await prisma.usuario.update({
+      where: { id: user.id },
+      data: { password: await hashPassword(passwordNuevo) },
+    });
+
+    return res.status(200).json({ message: "Contraseña actualizada correctamente" });
+  } catch (error) {
+    console.error("Error en cambiarMiPassword:", error);
     return res.status(500).json({ error: "Error interno del servidor" });
   }
 }
