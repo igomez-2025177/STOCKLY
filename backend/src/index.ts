@@ -7,6 +7,7 @@ import { prisma } from './config/prisma';
 import authRoutes from './routes/auth.routes';
 import categoriaRoutes from './routes/categoria.routes';
 import proveedorRoutes from './routes/proveedor.routes';
+import productoRoutes from './routes/producto.routes';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -27,6 +28,7 @@ app.get('/api/health', async (_req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/categorias', categoriaRoutes);
 app.use('/api/proveedores', proveedorRoutes);
+app.use('/api/productos', productoRoutes);
 
 async function iniciar() {
   try {
