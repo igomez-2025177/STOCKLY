@@ -1,0 +1,133 @@
+<main class="login">
+  <!-- panel de marca, lado izquierdo -->
+  <section class="login-marca">
+    <div class="marca marca-clara">
+      <img src="stockly-icon.png" alt="" />
+      <span class="marca-texto">Stockly</span>
+    </div>
+
+    <div class="login-mensaje">
+      <h1>Tu inventario,<br /><span class="resaltado">en orden.</span></h1>
+      <p>Controla lo que tienes, lo que entra y lo que sale de tu bodega, sin cuadernos ni cuentas a mano.</p>
+
+      <ul class="login-puntos">
+        <li>Stock actualizado con cada entrada y salida</li>
+        <li>Alertas cuando algo se está acabando</li>
+        <li>Historial de quién movió qué y cuándo</li>
+      </ul>
+    </div>
+
+    <small class="login-pie">Isai Gómez · 2025-177</small>
+  </section>
+
+  <!-- formulario, lado derecho -->
+  <section class="login-formulario">
+    <div class="login-caja">
+      <div class="marca login-marca-movil">
+        <img src="stockly-icon.png" alt="" />
+        <span class="marca-texto">Stockly</span>
+      </div>
+
+      @if (revisando()) {
+        <p class="texto-suave">Cargando...</p>
+      } @else {
+        @if (modoRegistro()) {
+          <span class="badge badge-lima">Primer inicio</span>
+          <h2>Crea la cuenta del administrador</h2>
+          <p class="texto-suave">
+            Todavía no hay usuarios. Esta cuenta va a ser la del dueño y después podrá crear a sus empleados.
+          </p>
+        } @else {
+          <h2>Iniciar sesión</h2>
+          <p class="texto-suave">Ingresa con tu correo y contraseña.</p>
+        }
+
+        @if (aviso()) {
+          <div class="aviso aviso-info">{{ aviso() }}</div>
+        }
+
+        @if (error()) {
+          <div class="aviso aviso-peligro">{{ error() }}</div>
+        }
+
+        <form [formGroup]="form" (ngSubmit)="enviar()" novalidate>
+          @if (modoRegistro()) {
+            <div class="campo">
+              <label for="nombre">Nombre</label>
+              <input
+                id="nombre"
+                class="input"
+                type="text"
+                formControlName="nombre"
+                placeholder="Tu nombre"
+                autocomplete="name"
+                [class.invalido]="campoInvalido('nombre')"
+              />
+              @if (campoInvalido('nombre')) {
+                <span class="error-campo">El nombre es obligatorio</span>
+              }
+            </div>
+          }
+
+          <div class="campo">
+            <label for="correo">Correo</label>
+            <input
+              id="correo"
+              class="input"
+              type="email"
+              formControlName="correo"
+              placeholder="tucorreo@gmail.com"
+              autocomplete="email"
+              [class.invalido]="campoInvalido('correo')"
+            />
+            @if (campoInvalido('correo')) {
+              <span class="error-campo">Escribe un correo válido</span>
+            }
+          </div>
+
+          <div class="campo">
+            <label for="password">Contraseña</label>
+            <div class="input-password">
+              <input
+                id="password"
+                class="input"
+                [type]="verPassword() ? 'text' : 'password'"
+                formControlName="password"
+                placeholder="••••••••"
+                [attr.autocomplete]="modoRegistro() ? 'new-password' : 'current-password'"
+                [class.invalido]="campoInvalido('password')"
+              />
+              <button
+                type="button"
+                class="btn btn-fantasma btn-sm ver-password"
+                (click)="verPassword.set(!verPassword())"
+                [attr.aria-label]="verPassword() ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+              >
+                {{ verPassword() ? 'Ocultar' : 'Ver' }}
+              </button>
+            </div>
+            @if (campoInvalido('password')) {
+              <span class="error-campo">
+                {{ modoRegistro() ? 'Mínimo 8 caracteres' : 'La contraseña es obligatoria' }}
+              </span>
+            }
+          </div>
+
+          <button type="submit" class="btn btn-primario btn-bloque" [disabled]="cargando()">
+            @if (cargando()) {
+              Un momento...
+            } @else {
+              {{ modoRegistro() ? 'Crear cuenta y entrar' : 'Entrar' }}
+            }
+          </button>
+        </form>
+
+        @if (!modoRegistro()) {
+          <p class="login-ayuda texto-tenue">
+            ¿No tienes cuenta? Pídele al administrador de tu negocio que te cree una.
+          </p>
+        }
+      }
+    </div>
+  </section>
+</main>
