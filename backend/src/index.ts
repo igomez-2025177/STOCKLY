@@ -8,6 +8,7 @@ import authRoutes from './routes/auth.routes';
 import categoriaRoutes from './routes/categoria.routes';
 import proveedorRoutes from './routes/proveedor.routes';
 import productoRoutes from './routes/producto.routes';
+import movimientoRoutes from './routes/movimiento.routes';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -29,6 +30,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/categorias', categoriaRoutes);
 app.use('/api/proveedores', proveedorRoutes);
 app.use('/api/productos', productoRoutes);
+app.use('/api/movimientos', movimientoRoutes);
 
 async function iniciar() {
   try {
