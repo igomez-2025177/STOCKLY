@@ -1,5 +1,15 @@
+# dependencias
 node_modules/
-.env
+
+# builds
 dist/
 .angular/
+
+# cliente generado de prisma
 backend/src/generated/
+
+# herramientas del editor / IA
+.agents/
+.claude/
+.windsurf/
+skills-lock.json
