@@ -1,0 +1,138 @@
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Rol {
+  ADMIN
+  EMPLEADO
+}
+
+enum TipoMovimiento {
+  ENTRADA
+  SALIDA
+}
+
+// el porque del movimiento, la combinacion con el tipo se valida en el backend
+// COMPRA -> solo ENTRADA | VENTA y PERDIDA -> solo SALIDA | DEVOLUCION y AJUSTE -> los dos
+enum MotivoMovimiento {
+  COMPRA
+  VENTA
+  PERDIDA
+  DEVOLUCION
+  AJUSTE
+}
+
+// solo pa mostrar, las cantidades siempre son enteras
+enum UnidadMedida {
+  UNIDAD
+  CAJA
+  PAQUETE
+  BOLSA
+  DOCENA
+  LIBRA
+  LITRO
+  METRO
+}
+
+model Usuario {
+  id            Int          @id @default(autoincrement())
+  nombre        String
+  correo        String       @unique
+  password      String
+  rol           Rol          @default(EMPLEADO)
+  activo        Boolean      @default(true)
+  creadoEn      DateTime     @default(now())
+  actualizadoEn DateTime     @updatedAt
+  movimientos   Movimiento[]
+
+  @@map("usuarios")
+}
+
+model Categoria {
+  id            Int        @id @default(autoincrement())
+  nombre        String     @unique
+  descripcion   String?
+  activo        Boolean    @default(true)
+  creadoEn      DateTime   @default(now())
+  actualizadoEn DateTime   @updatedAt
+  productos     Producto[]
+
+  @@map("categorias")
+}
+
+model Proveedor {
+  id            Int          @id @default(autoincrement())
+  nombre        String       @unique
+  contacto      String?
+  telefono      String?
+  correo        String?
+  nit           String?
+  activo        Boolean      @default(true)
+  creadoEn      DateTime     @default(now())
+  actualizadoEn DateTime     @updatedAt
+  productos     Producto[]
+  movimientos   Movimiento[]
+
+  @@map("proveedores")
+}
+
+model Producto {
+  id            Int          @id @default(autoincrement())
+  sku           String       @unique
+  nombre        String
+  descripcion   String?
+  unidad        UnidadMedida @default(UNIDAD)
+  ubicacion     String?
+  precioCompra  Decimal      @default(0) @db.Decimal(10, 2)
+  precioVenta   Decimal      @db.Decimal(10, 2)
+  stockActual   Int          @default(0)
+  stockMinimo   Int          @default(0)
+  activo        Boolean      @default(true)
+  categoriaId   Int
+  proveedorId   Int?
+  creadoEn      DateTime     @default(now())
+  actualizadoEn DateTime     @updatedAt
+
+  // Restrict = no deja borrar una categoria o proveedor que tenga productos
+  categoria   Categoria    @relation(fields: [categoriaId], references: [id], onDelete: Restrict)
+  proveedor   Proveedor?   @relation(fields: [proveedorId], references: [id], onDelete: Restrict)
+  movimientos Movimiento[]
+
+  @@index([categoriaId])
+  @@index([proveedorId])
+  @@index([activo])
+  @@map("productos")
+}
+
+model Movimiento {
+  id              Int              @id @default(autoincrement())
+  tipo            TipoMovimiento
+  motivo          MotivoMovimiento
+  cantidad        Int
+  stockResultante Int
+  // foto del precio ese dia, asi los reportes no cambian si despues sube el precio
+  precioUnitario  Decimal?         @db.Decimal(10, 2)
+  referencia      String?
+  nota            String?
+  fecha           DateTime         @default(now())
+  productoId      Int
+  usuarioId       Int
+  proveedorId     Int?
+
+  producto  Producto   @relation(fields: [productoId], references: [id], onDelete: Restrict)
+  usuario   Usuario    @relation(fields: [usuarioId], references: [id], onDelete: Restrict)
+  proveedor Proveedor? @relation(fields: [proveedorId], references: [id], onDelete: Restrict)
+
+  @@index([productoId])
+  @@index([usuarioId])
+  @@index([proveedorId])
+  @@index([fecha])
+  @@index([tipo, motivo])
+  @@map("movimientos")
+}
