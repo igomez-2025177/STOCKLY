@@ -10,6 +10,7 @@ import categoriaRoutes from './routes/categoria.routes';
 import proveedorRoutes from './routes/proveedor.routes';
 import productoRoutes from './routes/producto.routes';
 import movimientoRoutes from './routes/movimiento.routes';
+import dashboardRoutes from './routes/dashboard.routes';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -17,7 +18,6 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
-// ruta de prueba pa ver que el server y la base responden
 app.get('/api/health', async (_req, res) => {
   try {
     await prisma.$queryRaw`SELECT 1`;
@@ -33,10 +33,10 @@ app.use('/api/categorias', categoriaRoutes);
 app.use('/api/proveedores', proveedorRoutes);
 app.use('/api/productos', productoRoutes);
 app.use('/api/movimientos', movimientoRoutes);
+app.use('/api/dashboard', dashboardRoutes);
 
 async function iniciar() {
   try {
-    // 1. la base  2. las tablas  3. prisma  4. el server
     await crearBaseDatos();
     aplicarMigraciones();
     await prisma.$connect();
