@@ -5,6 +5,7 @@ import { crearBaseDatos } from './config/crearBaseDatos';
 import { aplicarMigraciones } from './config/aplicarMigraciones';
 import { prisma } from './config/prisma';
 import authRoutes from './routes/auth.routes';
+import categoriaRoutes from './routes/categoria.routes';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -22,6 +23,7 @@ app.get('/api/health', async (_req, res) => {
 });
 
 app.use('/api/auth', authRoutes);
+app.use('/api/categorias', categoriaRoutes);
 
 async function iniciar() {
   try {
