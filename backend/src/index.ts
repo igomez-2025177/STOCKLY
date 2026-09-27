@@ -2,6 +2,7 @@ import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import { crearBaseDatos } from './config/crearBaseDatos';
+import { aplicarMigraciones } from './config/aplicarMigraciones';
 import { prisma } from './config/prisma';
 
 const app = express();
@@ -22,8 +23,9 @@ app.get('/api/health', async (_req, res) => {
 
 async function iniciar() {
   try {
-    // primero la base, despues prisma, despues el server
+    // 1. la base  2. las tablas  3. prisma  4. el server
     await crearBaseDatos();
+    aplicarMigraciones();
     await prisma.$connect();
     console.log('Prisma conectado');
 
