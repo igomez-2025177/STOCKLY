@@ -6,6 +6,7 @@ import { aplicarMigraciones } from './config/aplicarMigraciones';
 import { prisma } from './config/prisma';
 import authRoutes from './routes/auth.routes';
 import categoriaRoutes from './routes/categoria.routes';
+import proveedorRoutes from './routes/proveedor.routes';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -13,6 +14,7 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 
+// ruta de prueba pa ver que el server y la base responden
 app.get('/api/health', async (_req, res) => {
   try {
     await prisma.$queryRaw`SELECT 1`;
@@ -24,9 +26,11 @@ app.get('/api/health', async (_req, res) => {
 
 app.use('/api/auth', authRoutes);
 app.use('/api/categorias', categoriaRoutes);
+app.use('/api/proveedores', proveedorRoutes);
 
 async function iniciar() {
   try {
+    // 1. la base  2. las tablas  3. prisma  4. el server
     await crearBaseDatos();
     aplicarMigraciones();
     await prisma.$connect();
