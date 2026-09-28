@@ -8,7 +8,6 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/login/login').then((m) => m.Login),
   },
   {
-    // todo lo que va con el menu lateral
     path: '',
     canActivate: [authGuard],
     loadComponent: () => import('./shared/layout/layout').then((m) => m.Layout),
@@ -16,6 +15,10 @@ export const routes: Routes = [
       {
         path: 'dashboard',
         loadComponent: () => import('./pages/dashboard/dashboard').then((m) => m.Dashboard),
+      },
+      {
+        path: 'productos',
+        loadComponent: () => import('./pages/productos/productos').then((m) => m.Productos),
       },
       {
         path: 'categorias',

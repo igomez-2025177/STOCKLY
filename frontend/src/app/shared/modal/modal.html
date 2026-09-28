@@ -2,6 +2,7 @@
   <div class="modal-fondo" (click)="cerrar.emit()">
     <div
       class="modal"
+      [class.modal-grande]="tamano() === 'grande'"
       role="dialog"
       aria-modal="true"
       [attr.aria-label]="titulo()"
