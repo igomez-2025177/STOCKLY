@@ -1,0 +1,210 @@
+<div class="pagina-encabezado">
+  <div>
+    <h1>Proveedores</h1>
+    <p>Las empresas o personas que te surten la mercadería.</p>
+  </div>
+  <button type="button" class="btn btn-primario" (click)="abrirNuevo()">+ Nuevo proveedor</button>
+</div>
+
+@if (mensaje()) {
+  <div class="aviso aviso-exito">{{ mensaje() }}</div>
+}
+
+@if (error()) {
+  <div class="aviso aviso-peligro">{{ error() }}</div>
+}
+
+<div class="barra-herramientas">
+  <input
+    type="search"
+    class="input buscador"
+    placeholder="Buscar por nombre, contacto, teléfono o NIT..."
+    [value]="busqueda()"
+    (input)="busqueda.set($any($event.target).value)"
+  />
+
+  <label class="check">
+    <input type="checkbox" [checked]="verTodos()" (change)="cambiarVerTodos($any($event.target).checked)" />
+    Ver desactivados
+  </label>
+</div>
+
+@if (cargando()) {
+  <p class="texto-suave">Cargando proveedores...</p>
+} @else if (proveedores().length === 0) {
+  <div class="tarjeta vacio">
+    <strong>Todavía no hay proveedores.</strong><br />
+    Agrega a quienes te surten la mercadería.
+  </div>
+} @else if (filtrados().length === 0) {
+  <div class="tarjeta vacio">No hay proveedores que coincidan con "{{ busqueda() }}".</div>
+} @else {
+  <div class="tabla-contenedor">
+    <table class="tabla">
+      <thead>
+        <tr>
+          <th>Proveedor</th>
+          <th>Teléfono</th>
+          <th>Correo</th>
+          <th>NIT</th>
+          <th class="derecha">Productos</th>
+          <th>Estado</th>
+          <th class="derecha">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (p of filtrados(); track p.id) {
+          <tr [class.fila-apagada]="!p.activo">
+            <td>
+              <span class="negrita">{{ p.nombre }}</span>
+              @if (p.contacto) {
+                <br /><span class="texto-tenue">{{ p.contacto }}</span>
+              }
+            </td>
+            <td>
+              @if (p.telefono) {
+                <a [href]="'tel:' + p.telefono" class="link-dato">{{ p.telefono }}</a>
+              } @else {
+                <span class="texto-tenue">—</span>
+              }
+            </td>
+            <td>
+              @if (p.correo) {
+                <a [href]="'mailto:' + p.correo" class="link-dato">{{ p.correo }}</a>
+              } @else {
+                <span class="texto-tenue">—</span>
+              }
+            </td>
+            <td class="mono">{{ p.nit ?? '—' }}</td>
+            <td class="derecha">{{ p._count?.productos ?? 0 }}</td>
+            <td>
+              @if (p.activo) {
+                <span class="badge badge-exito">Activo</span>
+              } @else {
+                <span class="badge badge-neutro">Desactivado</span>
+              }
+            </td>
+            <td>
+              <div class="acciones">
+                <button type="button" class="btn btn-secundario btn-sm" (click)="abrirEditar(p)">Editar</button>
+                <button type="button" class="btn btn-secundario btn-sm" (click)="cambiarEstado(p)">
+                  {{ p.activo ? 'Desactivar' : 'Reactivar' }}
+                </button>
+                <button
+                  type="button"
+                  class="btn btn-peligro btn-sm"
+                  [disabled]="(p._count?.productos ?? 0) > 0"
+                  [title]="(p._count?.productos ?? 0) > 0 ? 'Surte productos, solo se puede desactivar' : 'Eliminar'"
+                  (click)="eliminar(p)"
+                >
+                  Eliminar
+                </button>
+              </div>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+}
+
+<!-- formulario de crear / editar -->
+<app-modal
+  [titulo]="editando() ? 'Editar proveedor' : 'Nuevo proveedor'"
+  [abierto]="modalAbierto()"
+  (cerrar)="cerrarModal()"
+>
+  @if (errorForm()) {
+    <div class="aviso aviso-peligro aviso-con-accion">
+      <span>{{ errorForm() }}</span>
+      @if (reactivarId()) {
+        <button type="button" class="btn btn-acento btn-sm" (click)="reactivarDesdeAviso()" [disabled]="guardando()">
+          Reactivarlo
+        </button>
+      }
+    </div>
+  }
+
+  <form [formGroup]="form" (ngSubmit)="guardar()" novalidate>
+    <div class="campo">
+      <label for="nombre">Nombre de la empresa *</label>
+      <input
+        id="nombre"
+        class="input"
+        type="text"
+        formControlName="nombre"
+        placeholder="Ej. Distribuidora La Económica"
+        [class.invalido]="campoInvalido('nombre')"
+      />
+      @if (campoInvalido('nombre')) {
+        <span class="error-campo">El nombre es obligatorio</span>
+      }
+    </div>
+
+    <div class="campo">
+      <label for="contacto">Persona de contacto</label>
+      <input
+        id="contacto"
+        class="input"
+        type="text"
+        formControlName="contacto"
+        placeholder="Ej. Don Carlos, el vendedor"
+        [class.invalido]="campoInvalido('contacto')"
+      />
+    </div>
+
+    <div class="fila-campos">
+      <div class="campo">
+        <label for="telefono">Teléfono</label>
+        <input
+          id="telefono"
+          class="input"
+          type="tel"
+          formControlName="telefono"
+          placeholder="5555-1234"
+          [class.invalido]="campoInvalido('telefono')"
+        />
+        @if (campoInvalido('telefono')) {
+          <span class="error-campo">De 8 a 15 caracteres, solo números, espacios, + o -</span>
+        }
+      </div>
+
+      <div class="campo">
+        <label for="nit">NIT</label>
+        <input
+          id="nit"
+          class="input"
+          type="text"
+          formControlName="nit"
+          placeholder="1234567-8 o CF"
+          [class.invalido]="campoInvalido('nit')"
+        />
+        @if (campoInvalido('nit')) {
+          <span class="error-campo">Ej. 1234567-8, 1234567K o CF</span>
+        }
+      </div>
+    </div>
+
+    <div class="campo">
+      <label for="correo">Correo</label>
+      <input
+        id="correo"
+        class="input"
+        type="email"
+        formControlName="correo"
+        placeholder="ventas@proveedor.com"
+        [class.invalido]="campoInvalido('correo')"
+      />
+      @if (campoInvalido('correo')) {
+        <span class="error-campo">Escribe un correo válido</span>
+      }
+    </div>
+
+    <div class="modal-botones">
+      <button type="button" class="btn btn-secundario" (click)="cerrarModal()" [disabled]="guardando()">Cancelar</button>
+      <button type="submit" class="btn btn-primario" [disabled]="guardando()">
+        {{ guardando() ? 'Guardando...' : editando() ? 'Guardar cambios' : 'Crear proveedor' }}
+      </button>
+    </div>
+  </form>
+</app-modal>

@@ -21,6 +21,10 @@ export const routes: Routes = [
         path: 'categorias',
         loadComponent: () => import('./pages/categorias/categorias').then((m) => m.Categorias),
       },
+      {
+        path: 'proveedores',
+        loadComponent: () => import('./pages/proveedores/proveedores').then((m) => m.Proveedores),
+      },
       { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
     ],
   },
