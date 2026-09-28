@@ -30,8 +30,7 @@ export class Dashboard implements OnInit {
     if (hora < 19) return `Buenas tardes, ${nombre}`;
     return `Buenas noches, ${nombre}`;
   });
-
-  // pa las barritas del top vendidos
+  
   readonly maxVendido = computed(() => {
     const top = this.datos()?.topVendidos ?? [];
     return Math.max(1, ...top.map((t) => t.unidadesVendidas));

@@ -8,6 +8,7 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/login/login').then((m) => m.Login),
   },
   {
+    // todo lo que va con el menu lateral
     path: '',
     canActivate: [authGuard],
     loadComponent: () => import('./shared/layout/layout').then((m) => m.Layout),
@@ -15,6 +16,10 @@ export const routes: Routes = [
       {
         path: 'dashboard',
         loadComponent: () => import('./pages/dashboard/dashboard').then((m) => m.Dashboard),
+      },
+      {
+        path: 'categorias',
+        loadComponent: () => import('./pages/categorias/categorias').then((m) => m.Categorias),
       },
       { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
     ],

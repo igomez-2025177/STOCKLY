@@ -1,0 +1,147 @@
+<div class="pagina-encabezado">
+  <div>
+    <h1>Categorías</h1>
+    <p>Organiza tus productos por tipo, por ejemplo Bebidas, Limpieza o Abarrotes.</p>
+  </div>
+  <button type="button" class="btn btn-primario" (click)="abrirNueva()">+ Nueva categoría</button>
+</div>
+
+@if (mensaje()) {
+  <div class="aviso aviso-exito">{{ mensaje() }}</div>
+}
+
+@if (error()) {
+  <div class="aviso aviso-peligro">{{ error() }}</div>
+}
+
+<div class="barra-herramientas">
+  <input
+    type="search"
+    class="input buscador"
+    placeholder="Buscar categoría..."
+    [value]="busqueda()"
+    (input)="busqueda.set($any($event.target).value)"
+  />
+
+  <label class="check">
+    <input type="checkbox" [checked]="verTodas()" (change)="cambiarVerTodas($any($event.target).checked)" />
+    Ver desactivadas
+  </label>
+</div>
+
+@if (cargando()) {
+  <p class="texto-suave">Cargando categorías...</p>
+} @else if (categorias().length === 0) {
+  <div class="tarjeta vacio">
+    <strong>Todavía no hay categorías.</strong><br />
+    Crea la primera para empezar a registrar productos.
+  </div>
+} @else if (filtradas().length === 0) {
+  <div class="tarjeta vacio">No hay categorías que coincidan con "{{ busqueda() }}".</div>
+} @else {
+  <div class="tabla-contenedor">
+    <table class="tabla">
+      <thead>
+        <tr>
+          <th>Nombre</th>
+          <th class="derecha">Productos</th>
+          <th>Estado</th>
+          <th class="derecha">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (c of filtradas(); track c.id) {
+          <tr [class.fila-apagada]="!c.activo">
+            <td>
+              <span class="negrita">{{ c.nombre }}</span>
+              @if (c.descripcion) {
+                <br /><span class="texto-tenue">{{ c.descripcion }}</span>
+              }
+            </td>
+            <td class="derecha">{{ c._count?.productos ?? 0 }}</td>
+            <td>
+              @if (c.activo) {
+                <span class="badge badge-exito">Activa</span>
+              } @else {
+                <span class="badge badge-neutro">Desactivada</span>
+              }
+            </td>
+            <td>
+              <div class="acciones">
+                <button type="button" class="btn btn-secundario btn-sm" (click)="abrirEditar(c)">Editar</button>
+                <button type="button" class="btn btn-secundario btn-sm" (click)="cambiarEstado(c)">
+                  {{ c.activo ? 'Desactivar' : 'Reactivar' }}
+                </button>
+                <button
+                  type="button"
+                  class="btn btn-peligro btn-sm"
+                  [disabled]="(c._count?.productos ?? 0) > 0"
+                  [title]="(c._count?.productos ?? 0) > 0 ? 'Tiene productos, solo se puede desactivar' : 'Eliminar'"
+                  (click)="eliminar(c)"
+                >
+                  Eliminar
+                </button>
+              </div>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+}
+
+<!-- formulario de crear / editar -->
+<app-modal
+  [titulo]="editando() ? 'Editar categoría' : 'Nueva categoría'"
+  [abierto]="modalAbierto()"
+  (cerrar)="cerrarModal()"
+>
+  @if (errorForm()) {
+    <div class="aviso aviso-peligro aviso-con-accion">
+      <span>{{ errorForm() }}</span>
+      @if (reactivarId()) {
+        <button type="button" class="btn btn-acento btn-sm" (click)="reactivarDesdeAviso()" [disabled]="guardando()">
+          Reactivarla
+        </button>
+      }
+    </div>
+  }
+
+  <form [formGroup]="form" (ngSubmit)="guardar()" novalidate>
+    <div class="campo">
+      <label for="nombre">Nombre *</label>
+      <input
+        id="nombre"
+        class="input"
+        type="text"
+        formControlName="nombre"
+        placeholder="Ej. Bebidas"
+        [class.invalido]="campoInvalido('nombre')"
+      />
+      @if (campoInvalido('nombre')) {
+        <span class="error-campo">El nombre es obligatorio (máximo 60 caracteres)</span>
+      }
+    </div>
+
+    <div class="campo">
+      <label for="descripcion">Descripción</label>
+      <textarea
+        id="descripcion"
+        class="textarea"
+        formControlName="descripcion"
+        placeholder="Opcional, ej. Gaseosas, jugos y agua"
+        [class.invalido]="campoInvalido('descripcion')"
+      ></textarea>
+      @if (campoInvalido('descripcion')) {
+        <span class="error-campo">Máximo 200 caracteres</span>
+      }
+    </div>
+
+    <div class="modal-botones">
+      <button type="button" class="btn btn-secundario" (click)="cerrarModal()" [disabled]="guardando()">Cancelar</button>
+      <button type="submit" class="btn btn-primario" [disabled]="guardando()">
+        {{ guardando() ? 'Guardando...' : editando() ? 'Guardar cambios' : 'Crear categoría' }}
+      </button>
+    </div>
+  </form>
+</app-modal>
