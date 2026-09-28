@@ -7,18 +7,17 @@ import {
   cambiarEstadoCategoria,
   eliminarCategoria,
 } from "../controllers/categoria.controller";
-import { authMiddleware, soloAdmin } from "../middlewares/auth.middleware";
+import { authMiddleware } from "../middlewares/auth.middleware";
 
 const router = Router();
 
-// todas las rutas de aqui piden sesion
 router.use(authMiddleware);
 
 router.get("/", listarCategorias);
 router.get("/:id", obtenerCategoria);
-router.post("/", soloAdmin, crearCategoria);
-router.put("/:id", soloAdmin, actualizarCategoria);
-router.patch("/:id/estado", soloAdmin, cambiarEstadoCategoria);
-router.delete("/:id", soloAdmin, eliminarCategoria);
+router.post("/", crearCategoria);
+router.put("/:id", actualizarCategoria);
+router.patch("/:id/estado", cambiarEstadoCategoria);
+router.delete("/:id", eliminarCategoria);
 
 export default router;

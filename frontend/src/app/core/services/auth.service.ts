@@ -19,16 +19,11 @@ export class AuthService {
   readonly token = this._token.asReadonly();
   readonly usuario = this._usuario.asReadonly();
   readonly estaLogueado = computed(() => !!this._token() && !!this._usuario());
-  readonly esAdmin = computed(() => this._usuario()?.rol === 'ADMIN');
 
   readonly mensajeLogin = signal<string | null>(null);
 
   constructor() {
     this.cargarSesion();
-  }
-
-  registroAbierto(): Observable<{ abierto: boolean }> {
-    return this.http.get<{ abierto: boolean }>(`${API_URL}/auth/registro-abierto`);
   }
 
   login(correo: string, password: string): Observable<AuthResponse> {

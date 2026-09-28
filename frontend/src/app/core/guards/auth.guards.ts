@@ -8,14 +8,9 @@ export const authGuard: CanActivateFn = () => {
   return auth.estaLogueado() ? true : router.createUrlTree(['/login']);
 };
 
+
 export const invitadoGuard: CanActivateFn = () => {
   const auth = inject(AuthService);
   const router = inject(Router);
   return auth.estaLogueado() ? router.createUrlTree(['/dashboard']) : true;
-};
-
-export const adminGuard: CanActivateFn = () => {
-  const auth = inject(AuthService);
-  const router = inject(Router);
-  return auth.esAdmin() ? true : router.createUrlTree(['/dashboard']);
 };

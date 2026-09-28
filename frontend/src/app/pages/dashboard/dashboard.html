@@ -1,0 +1,210 @@
+<div class="pagina-encabezado">
+  <div>
+    <h1>{{ saludo() }}</h1>
+    <p>{{ hoy | date: "EEEE d 'de' MMMM 'de' y" }}</p>
+  </div>
+  <button type="button" class="btn btn-secundario" (click)="cargar()" [disabled]="cargando()">
+    {{ cargando() ? 'Actualizando...' : 'Actualizar' }}
+  </button>
+</div>
+
+@if (error()) {
+  <div class="aviso aviso-peligro">{{ error() }}</div>
+}
+
+@if (datos(); as d) {
+  <!-- numeros principales -->
+  <section class="grid-stats">
+    <div class="tarjeta stat">
+      <span class="stat-etiqueta">Productos activos</span>
+      <span class="stat-valor">{{ d.resumen.totalProductos }}</span>
+      <span class="texto-tenue stat-detalle">
+        en {{ d.resumen.totalCategorias }} categorías · {{ d.resumen.totalProveedores }} proveedores
+      </span>
+    </div>
+
+    <div class="tarjeta stat" [class.stat-alerta]="d.resumen.stockBajo > 0">
+      <span class="stat-etiqueta">Stock bajo</span>
+      <span class="stat-valor">{{ d.resumen.stockBajo }}</span>
+      <span class="texto-tenue stat-detalle">en su mínimo o por debajo</span>
+    </div>
+
+    <div class="tarjeta stat" [class.stat-peligro]="d.resumen.agotados > 0">
+      <span class="stat-etiqueta">Agotados</span>
+      <span class="stat-valor">{{ d.resumen.agotados }}</span>
+      <span class="texto-tenue stat-detalle">con 0 unidades</span>
+    </div>
+
+    <div class="tarjeta stat">
+      <span class="stat-etiqueta">Movimientos hoy</span>
+      <span class="stat-valor">{{ d.hoy.entradas + d.hoy.salidas }}</span>
+      <span class="stat-detalle">
+        <span class="texto-exito negrita">+{{ d.hoy.unidadesEntrada }}</span> entraron ·
+        <span class="negrita">−{{ d.hoy.unidadesSalida }}</span> salieron
+      </span>
+    </div>
+  </section>
+
+  <!-- dinero, solo admin -->
+  @if (d.inventario && d.mes) {
+    <section class="grid-stats grid-dinero">
+      <div class="tarjeta stat stat-oscura">
+        <span class="stat-etiqueta">Invertido en bodega</span>
+        <span class="stat-valor">{{ d.inventario.valorCompra | currency: 'GTQ' : 'symbol-narrow' }}</span>
+        <span class="stat-detalle">a precio de compra</span>
+      </div>
+
+      <div class="tarjeta stat">
+        <span class="stat-etiqueta">Si vendes todo</span>
+        <span class="stat-valor">{{ d.inventario.valorVenta | currency: 'GTQ' : 'symbol-narrow' }}</span>
+        <span class="texto-tenue stat-detalle">
+          ganancia posible
+          <span class="texto-exito negrita">
+            {{ d.inventario.gananciaPotencial | currency: 'GTQ' : 'symbol-narrow' }}
+          </span>
+        </span>
+      </div>
+
+      <div class="tarjeta stat">
+        <span class="stat-etiqueta">Ventas del mes</span>
+        <span class="stat-valor">{{ d.mes.ventas | currency: 'GTQ' : 'symbol-narrow' }}</span>
+        <span class="texto-tenue stat-detalle">
+          compras {{ d.mes.compras | currency: 'GTQ' : 'symbol-narrow' }}
+        </span>
+      </div>
+
+      <div class="tarjeta stat" [class.stat-peligro]="d.mes.perdidas > 0">
+        <span class="stat-etiqueta">Pérdidas del mes</span>
+        <span class="stat-valor">{{ d.mes.perdidas | currency: 'GTQ' : 'symbol-narrow' }}</span>
+        <span class="texto-tenue stat-detalle">dañado, vencido o perdido</span>
+      </div>
+    </section>
+  }
+
+  <!-- stock bajo y mas vendidos -->
+  <section class="grid-dos">
+    <div class="tarjeta">
+      <div class="tarjeta-titulo">
+        <h3>Se está acabando</h3>
+        @if (d.listaStockBajo.length > 0) {
+          <span class="badge badge-alerta">{{ d.listaStockBajo.length }}</span>
+        }
+      </div>
+
+      @if (d.listaStockBajo.length === 0) {
+        <div class="vacio">
+          <strong>Todo en orden.</strong><br />
+          Ningún producto está en su mínimo.
+        </div>
+      } @else {
+        <ul class="lista-bajo">
+          @for (p of d.listaStockBajo; track p.id) {
+            <li>
+              <div class="lista-info">
+                <span class="negrita">{{ p.nombre }}</span>
+                <span class="texto-tenue mono">{{ p.sku }} · {{ p.categoria.nombre }}</span>
+              </div>
+              <div class="lista-stock">
+                @if (p.stockActual === 0) {
+                  <span class="badge badge-peligro">Agotado</span>
+                } @else {
+                  <span class="badge badge-alerta">Quedan {{ p.stockActual }}</span>
+                }
+                <span class="texto-tenue lista-minimo">
+                  mínimo {{ p.stockMinimo }}
+                  @if (p.faltan > 0) {
+                    · faltan {{ p.faltan }}
+                  }
+                </span>
+              </div>
+            </li>
+          }
+        </ul>
+      }
+    </div>
+
+    <div class="tarjeta">
+      <div class="tarjeta-titulo">
+        <h3>Lo más vendido del mes</h3>
+      </div>
+
+      @if (d.topVendidos.length === 0) {
+        <div class="vacio">Todavía no hay ventas este mes.</div>
+      } @else {
+        <ol class="lista-top">
+          @for (t of d.topVendidos; track $index) {
+            <li>
+              <span class="top-posicion">{{ $index + 1 }}</span>
+              <div class="top-info">
+                <div class="top-fila">
+                  <span class="negrita">{{ t.producto?.nombre ?? 'Producto eliminado' }}</span>
+                  <span class="texto-suave">
+                    {{ t.unidadesVendidas | number }} {{ t.producto?.unidad | lowercase }}
+                  </span>
+                </div>
+                <div class="top-barra">
+                  <span [style.width.%]="(t.unidadesVendidas / maxVendido()) * 100"></span>
+                </div>
+              </div>
+            </li>
+          }
+        </ol>
+      }
+    </div>
+  </section>
+
+  <!-- ultimos movimientos -->
+  <section class="tarjeta">
+    <div class="tarjeta-titulo">
+      <h3>Últimos movimientos</h3>
+      <a routerLink="/movimientos" class="btn btn-fantasma btn-sm">Ver todos</a>
+    </div>
+
+    @if (d.ultimosMovimientos.length === 0) {
+      <div class="vacio">Todavía no hay movimientos registrados.</div>
+    } @else {
+      <div class="tabla-contenedor">
+        <table class="tabla">
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Producto</th>
+              <th>Movimiento</th>
+              <th class="derecha">Cantidad</th>
+              <th class="derecha">Quedó</th>
+              <th>Usuario</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (m of d.ultimosMovimientos; track m.id) {
+              <tr>
+                <td class="texto-suave">{{ m.fecha | date: 'd MMM, h:mm a' }}</td>
+                <td>
+                  <span class="negrita">{{ m.producto.nombre }}</span><br />
+                  <span class="texto-tenue mono">{{ m.producto.sku }}</span>
+                </td>
+                <td>
+                  <span
+                    class="badge"
+                    [class.badge-exito]="m.tipo === 'ENTRADA'"
+                    [class.badge-peligro]="m.motivo === 'PERDIDA'"
+                    [class.badge-neutro]="m.tipo === 'SALIDA' && m.motivo !== 'PERDIDA'"
+                  >
+                    {{ m.tipo === 'ENTRADA' ? 'Entrada' : 'Salida' }} · {{ motivoTexto[m.motivo] }}
+                  </span>
+                </td>
+                <td class="derecha negrita" [class.texto-exito]="m.tipo === 'ENTRADA'">
+                  {{ m.tipo === 'ENTRADA' ? '+' : '−' }}{{ m.cantidad }}
+                </td>
+                <td class="derecha">{{ m.stockResultante }}</td>
+                <td class="texto-suave">{{ m.usuario.nombre }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </section>
+} @else if (cargando()) {
+  <p class="texto-suave">Cargando dashboard...</p>
+}

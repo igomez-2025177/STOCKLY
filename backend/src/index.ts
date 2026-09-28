@@ -5,7 +5,6 @@ import { crearBaseDatos } from './config/crearBaseDatos';
 import { aplicarMigraciones } from './config/aplicarMigraciones';
 import { prisma } from './config/prisma';
 import authRoutes from './routes/auth.routes';
-import usuarioRoutes from './routes/usuario.routes';
 import categoriaRoutes from './routes/categoria.routes';
 import proveedorRoutes from './routes/proveedor.routes';
 import productoRoutes from './routes/producto.routes';
@@ -28,7 +27,6 @@ app.get('/api/health', async (_req, res) => {
 });
 
 app.use('/api/auth', authRoutes);
-app.use('/api/usuarios', usuarioRoutes);
 app.use('/api/categorias', categoriaRoutes);
 app.use('/api/proveedores', proveedorRoutes);
 app.use('/api/productos', productoRoutes);

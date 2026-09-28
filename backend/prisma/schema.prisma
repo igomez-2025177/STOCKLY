@@ -8,11 +8,6 @@ datasource db {
   provider = "postgresql"
 }
 
-enum Rol {
-  ADMIN
-  EMPLEADO
-}
-
 enum TipoMovimiento {
   ENTRADA
   SALIDA
@@ -45,8 +40,6 @@ model Usuario {
   nombre        String
   correo        String       @unique
   password      String
-  rol           Rol          @default(EMPLEADO)
-  activo        Boolean      @default(true)
   creadoEn      DateTime     @default(now())
   actualizadoEn DateTime     @updatedAt
   movimientos   Movimiento[]

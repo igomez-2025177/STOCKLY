@@ -8,6 +8,7 @@ const MOTIVOS = ["COMPRA", "VENTA", "PERDIDA", "DEVOLUCION", "AJUSTE"] as const;
 type Tipo = (typeof TIPOS)[number];
 type Motivo = (typeof MOTIVOS)[number];
 
+// que motivo va con que tipo
 const MOTIVOS_POR_TIPO: Record<Tipo, Motivo[]> = {
   ENTRADA: ["COMPRA", "DEVOLUCION", "AJUSTE"],
   SALIDA: ["VENTA", "PERDIDA", "DEVOLUCION", "AJUSTE"],
@@ -49,7 +50,6 @@ function vieneValor(value: unknown): boolean {
   return value !== undefined && value !== null && value !== "";
 }
 
-// "2026-09-27" -> Date, al inicio o al final del dia
 function parseFecha(value: unknown, finDelDia: boolean): Date | null {
   const texto = textoOpcional(value);
   if (!texto || !/^\d{4}-\d{2}-\d{2}$/.test(texto)) return null;
@@ -74,10 +74,6 @@ export async function registrarMovimiento(req: AuthRequest, res: Response) {
       return res.status(400).json({
         error: `Una ${tipo} no puede tener motivo ${motivo}. Para ${tipo} usa: ${MOTIVOS_POR_TIPO[tipo].join(", ")}`,
       });
-    }
-
-    if (motivo === "AJUSTE" && req.user?.role !== "ADMIN") {
-      return res.status(403).json({ error: "Solo el administrador puede hacer ajustes de inventario" });
     }
 
     const cantidad = Number(req.body.cantidad);
@@ -163,7 +159,6 @@ export async function registrarMovimiento(req: AuthRequest, res: Response) {
       }
 
       if (tipo === "SALIDA") {
-
         const actualizado = await tx.producto.updateMany({
           where: { id: productoId, stockActual: { gte: cantidad } },
           data: { stockActual: { decrement: cantidad } },
@@ -176,7 +171,6 @@ export async function registrarMovimiento(req: AuthRequest, res: Response) {
           );
         }
       } else {
-
         const cambiaPrecioCompra =
           motivo === "COMPRA" && precioBody !== null && precioBody !== Number(producto.precioCompra);
 

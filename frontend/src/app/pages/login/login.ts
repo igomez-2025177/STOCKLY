@@ -5,6 +5,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { AuthService } from '../../core/services/auth.service';
 
 type Campo = 'nombre' | 'correo' | 'password';
+type Modo = 'login' | 'registro';
 
 @Component({
   selector: 'app-login',
@@ -17,8 +18,7 @@ export class Login implements OnInit {
   private auth = inject(AuthService);
   private router = inject(Router);
 
-  readonly modoRegistro = signal(false);
-  readonly revisando = signal(true);
+  readonly modo = signal<Modo>('login');
   readonly cargando = signal(false);
   readonly verPassword = signal(false);
   readonly error = signal<string | null>(null);
@@ -33,25 +33,26 @@ export class Login implements OnInit {
   ngOnInit(): void {
     this.aviso.set(this.auth.mensajeLogin());
     this.auth.mensajeLogin.set(null);
+  }
 
-    this.auth.registroAbierto().subscribe({
-      next: ({ abierto }) => {
-        this.modoRegistro.set(abierto);
+  cambiarModo(modo: Modo): void {
+    this.modo.set(modo);
+    this.error.set(null);
+    this.aviso.set(null);
 
-        if (abierto) {
-          this.form.controls.nombre.setValidators([Validators.required]);
-          this.form.controls.password.setValidators([Validators.required, Validators.minLength(8)]);
-          this.form.controls.nombre.updateValueAndValidity();
-          this.form.controls.password.updateValueAndValidity();
-        }
+    const { nombre, password } = this.form.controls;
 
-        this.revisando.set(false);
-      },
-      error: () => {
-        this.revisando.set(false);
-        this.error.set('No se pudo conectar con el servidor. Revisa que el backend esté corriendo');
-      },
-    });
+    if (modo === 'registro') {
+      nombre.setValidators([Validators.required]);
+      password.setValidators([Validators.required, Validators.minLength(8)]);
+    } else {
+      nombre.clearValidators();
+      password.setValidators([Validators.required]);
+    }
+
+    nombre.updateValueAndValidity();
+    password.updateValueAndValidity();
+    this.form.markAsUntouched();
   }
 
   campoInvalido(campo: Campo): boolean {
@@ -71,9 +72,10 @@ export class Login implements OnInit {
 
     const { nombre, correo, password } = this.form.getRawValue();
 
-    const peticion = this.modoRegistro()
-      ? this.auth.register(nombre.trim(), correo.trim(), password)
-      : this.auth.login(correo.trim(), password);
+    const peticion =
+      this.modo() === 'registro'
+        ? this.auth.register(nombre.trim(), correo.trim(), password)
+        : this.auth.login(correo.trim(), password);
 
     peticion.subscribe({
       next: () => this.router.navigate(['/dashboard']),
