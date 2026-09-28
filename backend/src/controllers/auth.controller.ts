@@ -5,21 +5,11 @@ import { generateToken } from "../utils/jwt";
 import { AuthRequest } from "../middlewares/auth.middleware";
 import { ALLOWED_EMAIL_DOMAINS, MIN_PASSWORD, isEmailDomainAllowed, limpiarCorreo } from "../utils/correo";
 
-export async function registroAbierto(_req: Request, res: Response) {
-  try {
-    const total = await prisma.usuario.count();
-    return res.status(200).json({ abierto: total === 0 });
-  } catch (error) {
-    console.error("Error en registroAbierto:", error);
-    return res.status(500).json({ error: "Error interno del servidor" });
-  }
-}
-
 export async function register(req: Request, res: Response) {
   try {
     const { nombre, correo, password } = req.body;
 
-    if (!nombre || !correo || !password) {
+    if (!nombre || !String(nombre).trim() || !correo || !password) {
       return res.status(400).json({ error: "Faltan campos: nombre, correo, password" });
     }
 
@@ -37,26 +27,21 @@ export async function register(req: Request, res: Response) {
       });
     }
 
-    const totalUsuarios = await prisma.usuario.count();
+    const existingUser = await prisma.usuario.findUnique({ where: { correo: correoLimpio } });
 
-    if (totalUsuarios > 0) {
-      return res.status(403).json({
-        error: "El registro está cerrado. Pídele al administrador que te cree una cuenta",
-      });
+    if (existingUser) {
+      return res.status(409).json({ error: "Ya existe un usuario con ese correo" });
     }
-
-    const hashedPassword = await hashPassword(password);
 
     const user = await prisma.usuario.create({
       data: {
         nombre: String(nombre).trim(),
         correo: correoLimpio,
-        password: hashedPassword,
-        rol: "ADMIN",
+        password: await hashPassword(password),
       },
     });
 
-    const token = generateToken({ userId: user.id, role: user.rol });
+    const token = generateToken({ userId: user.id });
 
     return res.status(201).json({
       message: "Usuario registrado correctamente",
@@ -65,7 +50,6 @@ export async function register(req: Request, res: Response) {
         id: user.id,
         nombre: user.nombre,
         correo: user.correo,
-        rol: user.rol,
       },
     });
   } catch (error) {
@@ -94,11 +78,7 @@ export async function login(req: Request, res: Response) {
       return res.status(401).json({ error: "Credenciales inválidas" });
     }
 
-    if (!user.activo) {
-      return res.status(403).json({ error: "Tu cuenta está desactivada, habla con el administrador" });
-    }
-
-    const token = generateToken({ userId: user.id, role: user.rol });
+    const token = generateToken({ userId: user.id });
 
     return res.status(200).json({
       message: "Login exitoso",
@@ -107,7 +87,6 @@ export async function login(req: Request, res: Response) {
         id: user.id,
         nombre: user.nombre,
         correo: user.correo,
-        rol: user.rol,
       },
     });
   } catch (error) {
@@ -122,7 +101,7 @@ export async function me(req: AuthRequest, res: Response) {
 
     const user = await prisma.usuario.findUnique({
       where: { id: userId },
-      select: { id: true, nombre: true, correo: true, rol: true, activo: true },
+      select: { id: true, nombre: true, correo: true },
     });
 
     if (!user) {
@@ -136,6 +115,7 @@ export async function me(req: AuthRequest, res: Response) {
   }
 }
 
+// cada usuario cambia SU contraseña, pidiendo la actual
 export async function cambiarMiPassword(req: AuthRequest, res: Response) {
   try {
     const { passwordActual, passwordNuevo } = req.body;

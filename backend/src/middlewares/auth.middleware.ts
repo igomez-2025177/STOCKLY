@@ -6,6 +6,7 @@ export interface AuthRequest extends Request {
   user?: JwtPayload;
 }
 
+// revisa el token y que el usuario todavia exista en la base
 export async function authMiddleware(req: AuthRequest, res: Response, next: NextFunction) {
   const authHeader = req.headers.authorization;
 
@@ -25,25 +26,17 @@ export async function authMiddleware(req: AuthRequest, res: Response, next: Next
   try {
     const usuario = await prisma.usuario.findUnique({
       where: { id: payload.userId },
-      select: { id: true, rol: true, activo: true },
+      select: { id: true },
     });
 
-    if (!usuario || !usuario.activo) {
+    if (!usuario) {
       return res.status(401).json({ error: "Tu sesión ya no es válida, vuelve a iniciar sesión" });
     }
 
-    req.user = { userId: usuario.id, role: usuario.rol };
+    req.user = { userId: usuario.id };
     next();
   } catch (error) {
     console.error("Error en authMiddleware:", error);
     return res.status(500).json({ error: "Error interno del servidor" });
   }
-}
-
-export function soloAdmin(req: AuthRequest, res: Response, next: NextFunction) {
-  if (req.user?.role !== "ADMIN") {
-    return res.status(403).json({ error: "No tienes permiso para hacer esto" });
-  }
-
-  next();
 }

@@ -10,7 +10,6 @@ const secret: string = JWT_SECRET;
 
 export interface JwtPayload {
   userId: number;
-  role: "ADMIN" | "EMPLEADO";
 }
 
 export function generateToken(payload: JwtPayload): string {

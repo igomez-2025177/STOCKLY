@@ -12,17 +12,14 @@ function redondear(valor: number): number {
   return Math.round(valor * 100) / 100;
 }
 
-export async function obtenerDashboard(req: AuthRequest, res: Response) {
+export async function obtenerDashboard(_req: AuthRequest, res: Response) {
   try {
-    const esAdmin = req.user?.role === "ADMIN";
-
     const ahora = new Date();
     const inicioHoy = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate());
     const inicioMes = new Date(ahora.getFullYear(), ahora.getMonth(), 1);
 
-    const [productos, totalCategorias, totalProveedores, movimientosHoy, ultimosMovimientos, masVendidos] =
+    const [productos, totalCategorias, totalProveedores, movimientosHoy, ultimosMovimientos, masVendidos, movimientosMes] =
       await Promise.all([
-
         prisma.producto.findMany({
           where: { activo: true },
           select: {
@@ -54,6 +51,13 @@ export async function obtenerDashboard(req: AuthRequest, res: Response) {
           _sum: { cantidad: true },
           orderBy: { _sum: { cantidad: "desc" } },
           take: 5,
+        }),
+        prisma.movimiento.findMany({
+          where: {
+            fecha: { gte: inicioMes },
+            motivo: { in: ["VENTA", "COMPRA", "PERDIDA"] },
+          },
+          select: { motivo: true, cantidad: true, precioUnitario: true },
         }),
       ]);
 
@@ -96,7 +100,25 @@ export async function obtenerDashboard(req: AuthRequest, res: Response) {
       unidadesVendidas: v._sum.cantidad ?? 0,
     }));
 
-    const respuesta: Record<string, unknown> = {
+    let valorCompra = 0;
+    let valorVenta = 0;
+
+    for (const p of productos) {
+      valorCompra += p.stockActual * Number(p.precioCompra);
+      valorVenta += p.stockActual * Number(p.precioVenta);
+    }
+
+    const mes = { ventas: 0, compras: 0, perdidas: 0 };
+
+    for (const m of movimientosMes) {
+      const total = m.cantidad * Number(m.precioUnitario ?? 0);
+
+      if (m.motivo === "VENTA") mes.ventas += total;
+      if (m.motivo === "COMPRA") mes.compras += total;
+      if (m.motivo === "PERDIDA") mes.perdidas += total;
+    }
+
+    return res.status(200).json({
       resumen: {
         totalProductos: productos.length,
         totalCategorias,
@@ -108,49 +130,17 @@ export async function obtenerDashboard(req: AuthRequest, res: Response) {
       listaStockBajo,
       ultimosMovimientos,
       topVendidos,
-    };
-
-    if (esAdmin) {
-      let valorCompra = 0;
-      let valorVenta = 0;
-
-      for (const p of productos) {
-        valorCompra += p.stockActual * Number(p.precioCompra);
-        valorVenta += p.stockActual * Number(p.precioVenta);
-      }
-
-      const movimientosMes = await prisma.movimiento.findMany({
-        where: {
-          fecha: { gte: inicioMes },
-          motivo: { in: ["VENTA", "COMPRA", "PERDIDA"] },
-        },
-        select: { motivo: true, cantidad: true, precioUnitario: true },
-      });
-
-      const mes = { ventas: 0, compras: 0, perdidas: 0 };
-
-      for (const m of movimientosMes) {
-        const total = m.cantidad * Number(m.precioUnitario ?? 0);
-
-        if (m.motivo === "VENTA") mes.ventas += total;
-        if (m.motivo === "COMPRA") mes.compras += total;
-        if (m.motivo === "PERDIDA") mes.perdidas += total;
-      }
-
-      respuesta.inventario = {
+      inventario: {
         valorCompra: redondear(valorCompra),
         valorVenta: redondear(valorVenta),
         gananciaPotencial: redondear(valorVenta - valorCompra),
-      };
-
-      respuesta.mes = {
+      },
+      mes: {
         ventas: redondear(mes.ventas),
         compras: redondear(mes.compras),
         perdidas: redondear(mes.perdidas),
-      };
-    }
-
-    return res.status(200).json(respuesta);
+      },
+    });
   } catch (error) {
     console.error("Error en obtenerDashboard:", error);
     return res.status(500).json({ error: "Error interno del servidor" });
