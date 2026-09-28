@@ -7,7 +7,7 @@ import {
   cambiarEstadoProducto,
   eliminarProducto,
 } from "../controllers/producto.controller";
-import { authMiddleware, soloAdmin } from "../middlewares/auth.middleware";
+import { authMiddleware } from "../middlewares/auth.middleware";
 
 const router = Router();
 
@@ -15,9 +15,9 @@ router.use(authMiddleware);
 
 router.get("/", listarProductos);
 router.get("/:id", obtenerProducto);
-router.post("/", soloAdmin, crearProducto);
-router.put("/:id", soloAdmin, actualizarProducto);
-router.patch("/:id/estado", soloAdmin, cambiarEstadoProducto);
-router.delete("/:id", soloAdmin, eliminarProducto);
+router.post("/", crearProducto);
+router.put("/:id", actualizarProducto);
+router.patch("/:id/estado", cambiarEstadoProducto);
+router.delete("/:id", eliminarProducto);
 
 export default router;

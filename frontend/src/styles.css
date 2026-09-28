@@ -1,1 +1,476 @@
-/* You can add global styles to this file, and also import other style files */
+/* =========================================================
+   STOCKLY - estilos globales
+   colores sacados del logo: crema, tinta y lima
+   ========================================================= */
+
+:root {
+  /* marca */
+  --color-crema: #fcfbf6;
+  --color-tinta: #161613;
+  --color-lima: #eafd0e;
+  --color-lima-suave: #f6fec0;
+
+  /* superficies */
+  --color-fondo: var(--color-crema);
+  --color-superficie: #ffffff;
+  --color-superficie-2: #f4f2ea;
+  --color-borde: #e6e3d8;
+  --color-borde-fuerte: #cfcbbd;
+
+  /* texto */
+  --color-texto: var(--color-tinta);
+  --color-texto-suave: #5f5d55;
+  --color-texto-tenue: #8d8a7f;
+
+  /* estados */
+  --color-exito: #1f8a4c;
+  --color-exito-fondo: #e3f4ea;
+  --color-alerta: #b86e00;
+  --color-alerta-fondo: #fdf0d9;
+  --color-peligro: #c9302c;
+  --color-peligro-fondo: #fbe5e4;
+  --color-info: #2c5fc9;
+  --color-info-fondo: #e4ecfb;
+
+  /* medidas */
+  --radio-sm: 6px;
+  --radio: 10px;
+  --radio-lg: 16px;
+  --sombra: 0 1px 2px rgba(22, 22, 19, 0.06), 0 1px 3px rgba(22, 22, 19, 0.08);
+  --sombra-lg: 0 10px 30px rgba(22, 22, 19, 0.12);
+  --transicion: 150ms ease;
+
+  --fuente: 'Manrope', system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+
+/* ---------- base ---------- */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  font-family: var(--fuente);
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--color-texto);
+  background: var(--color-fondo);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  margin: 0 0 0.5rem;
+  line-height: 1.2;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+h1 { font-size: 1.75rem; }
+h2 { font-size: 1.375rem; }
+h3 { font-size: 1.125rem; }
+
+p {
+  margin: 0 0 1rem;
+}
+
+a {
+  color: var(--color-texto);
+  font-weight: 600;
+}
+
+img {
+  max-width: 100%;
+  display: block;
+}
+
+:focus-visible {
+  outline: 3px solid var(--color-lima);
+  outline-offset: 2px;
+}
+
+::selection {
+  background: var(--color-lima);
+  color: var(--color-tinta);
+}
+
+/* ---------- logo con texto (Stockly + cuadrito lima) ---------- */
+
+.marca {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  text-decoration: none;
+  color: inherit;
+}
+
+.marca img {
+  width: 34px;
+  height: 34px;
+  object-fit: contain;
+}
+
+.marca-texto {
+  font-weight: 800;
+  font-size: 1.5rem;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+.marca-texto::after {
+  content: '';
+  display: inline-block;
+  width: 0.28em;
+  height: 0.28em;
+  margin-left: 0.08em;
+  background: var(--color-lima);
+}
+
+/* ---------- botones ---------- */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.65rem 1.1rem;
+  border: 1px solid transparent;
+  border-radius: var(--radio);
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background var(--transicion), border-color var(--transicion), transform var(--transicion);
+  white-space: nowrap;
+}
+
+.btn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* principal: negro con texto lima, como el logo al reves */
+.btn-primario {
+  background: var(--color-tinta);
+  color: var(--color-lima);
+}
+
+.btn-primario:hover:not(:disabled) {
+  background: #2c2c27;
+}
+
+/* acento: lima con texto negro, pa la accion mas importante */
+.btn-acento {
+  background: var(--color-lima);
+  color: var(--color-tinta);
+}
+
+.btn-acento:hover:not(:disabled) {
+  background: #d9ec00;
+}
+
+.btn-secundario {
+  background: var(--color-superficie);
+  color: var(--color-texto);
+  border-color: var(--color-borde-fuerte);
+}
+
+.btn-secundario:hover:not(:disabled) {
+  background: var(--color-superficie-2);
+}
+
+.btn-peligro {
+  background: var(--color-peligro);
+  color: #ffffff;
+}
+
+.btn-peligro:hover:not(:disabled) {
+  background: #a82622;
+}
+
+.btn-fantasma {
+  background: transparent;
+  color: var(--color-texto-suave);
+}
+
+.btn-fantasma:hover:not(:disabled) {
+  background: var(--color-superficie-2);
+  color: var(--color-texto);
+}
+
+.btn-sm {
+  padding: 0.45rem 0.75rem;
+  font-size: 0.85rem;
+}
+
+.btn-bloque {
+  width: 100%;
+}
+
+/* ---------- formularios ---------- */
+
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-bottom: 1rem;
+}
+
+.campo label {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--color-texto);
+}
+
+.input,
+.select,
+.textarea {
+  width: 100%;
+  padding: 0.65rem 0.8rem;
+  border: 1px solid var(--color-borde-fuerte);
+  border-radius: var(--radio);
+  background: var(--color-superficie);
+  color: var(--color-texto);
+  font-family: inherit;
+  font-size: 0.95rem;
+  transition: border-color var(--transicion), box-shadow var(--transicion);
+}
+
+.input::placeholder,
+.textarea::placeholder {
+  color: var(--color-texto-tenue);
+}
+
+.input:focus,
+.select:focus,
+.textarea:focus {
+  outline: none;
+  border-color: var(--color-tinta);
+  box-shadow: 0 0 0 3px var(--color-lima-suave);
+}
+
+.input.invalido,
+.select.invalido,
+.textarea.invalido {
+  border-color: var(--color-peligro);
+}
+
+.textarea {
+  min-height: 90px;
+  resize: vertical;
+}
+
+.error-campo {
+  font-size: 0.8rem;
+  color: var(--color-peligro);
+  font-weight: 600;
+}
+
+.ayuda-campo {
+  font-size: 0.8rem;
+  color: var(--color-texto-tenue);
+}
+
+.fila-campos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0 1rem;
+}
+
+/* ---------- tarjetas ---------- */
+
+.tarjeta {
+  background: var(--color-superficie);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-lg);
+  padding: 1.25rem;
+  box-shadow: var(--sombra);
+}
+
+.tarjeta-titulo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.tarjeta-titulo h3 {
+  margin: 0;
+}
+
+/* tarjeta de numero grande pa el dashboard */
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.stat-etiqueta {
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-texto-suave);
+}
+
+.stat-valor {
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+}
+
+/* ---------- tablas ---------- */
+
+.tabla-contenedor {
+  width: 100%;
+  overflow-x: auto;
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-lg);
+  background: var(--color-superficie);
+}
+
+.tabla {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.tabla th {
+  text-align: left;
+  padding: 0.75rem 1rem;
+  background: var(--color-superficie-2);
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--color-texto-suave);
+  border-bottom: 1px solid var(--color-borde);
+  white-space: nowrap;
+}
+
+.tabla td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--color-borde);
+  vertical-align: middle;
+}
+
+.tabla tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.tabla tbody tr:hover {
+  background: #fdfdf9;
+}
+
+.tabla .derecha {
+  text-align: right;
+}
+
+.tabla .acciones {
+  display: flex;
+  gap: 0.35rem;
+  justify-content: flex-end;
+}
+
+/* ---------- etiquetas de estado ---------- */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.badge-exito { background: var(--color-exito-fondo); color: var(--color-exito); }
+.badge-alerta { background: var(--color-alerta-fondo); color: var(--color-alerta); }
+.badge-peligro { background: var(--color-peligro-fondo); color: var(--color-peligro); }
+.badge-info { background: var(--color-info-fondo); color: var(--color-info); }
+.badge-neutro { background: var(--color-superficie-2); color: var(--color-texto-suave); }
+.badge-lima { background: var(--color-lima); color: var(--color-tinta); }
+
+/* ---------- avisos ---------- */
+
+.aviso {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  padding: 0.8rem 1rem;
+  border-radius: var(--radio);
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+
+.aviso-exito { background: var(--color-exito-fondo); color: var(--color-exito); }
+.aviso-alerta { background: var(--color-alerta-fondo); color: var(--color-alerta); }
+.aviso-peligro { background: var(--color-peligro-fondo); color: var(--color-peligro); }
+.aviso-info { background: var(--color-info-fondo); color: var(--color-info); }
+
+/* ---------- utilidades ---------- */
+
+.pagina-encabezado {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.pagina-encabezado p {
+  margin: 0;
+  color: var(--color-texto-suave);
+}
+
+.texto-suave { color: var(--color-texto-suave); }
+.texto-tenue { color: var(--color-texto-tenue); }
+.texto-peligro { color: var(--color-peligro); }
+.texto-exito { color: var(--color-exito); }
+.negrita { font-weight: 800; }
+.mono { font-family: ui-monospace, 'Cascadia Code', Consolas, monospace; font-size: 0.85em; }
+
+.vacio {
+  text-align: center;
+  padding: 2.5rem 1rem;
+  color: var(--color-texto-tenue);
+}
+
+/* ---------- responsive ---------- */
+
+@media (max-width: 640px) {
+  body {
+    font-size: 14px;
+  }
+
+  h1 { font-size: 1.5rem; }
+
+  .tarjeta {
+    padding: 1rem;
+  }
+
+  .stat-valor {
+    font-size: 1.6rem;
+  }
+}

@@ -1,0 +1,178 @@
+.pagina-encabezado p::first-letter {
+  text-transform: uppercase;
+}
+
+/* ---------- tarjetas de numeros ---------- */
+
+.grid-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.grid-dinero {
+  margin-bottom: 1.5rem;
+}
+
+.stat-detalle {
+  font-size: 0.85rem;
+}
+
+.stat-alerta {
+  border-color: #f0d49a;
+  background: var(--color-alerta-fondo);
+}
+
+.stat-alerta .stat-valor {
+  color: var(--color-alerta);
+}
+
+.stat-peligro {
+  border-color: #f0b9b6;
+  background: var(--color-peligro-fondo);
+}
+
+.stat-peligro .stat-valor {
+  color: var(--color-peligro);
+}
+
+/* la tarjeta principal del dinero, negra con numero lima */
+.stat-oscura {
+  background: var(--color-tinta);
+  border-color: var(--color-tinta);
+  color: var(--color-crema);
+}
+
+.stat-oscura .stat-etiqueta,
+.stat-oscura .stat-detalle {
+  color: #a8a69b;
+}
+
+.stat-oscura .stat-valor {
+  color: var(--color-lima);
+}
+
+/* ---------- dos columnas ---------- */
+
+.grid-dos {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+/* ---------- lista de stock bajo ---------- */
+
+.lista-bajo {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  max-height: 340px;
+  overflow-y: auto;
+}
+
+.lista-bajo li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.7rem 0;
+  border-bottom: 1px solid var(--color-borde);
+}
+
+.lista-bajo li:last-child {
+  border-bottom: none;
+}
+
+.lista-info,
+.lista-stock {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.lista-info {
+  min-width: 0;
+}
+
+.lista-stock {
+  align-items: flex-end;
+  flex-shrink: 0;
+}
+
+.lista-minimo {
+  font-size: 0.8rem;
+}
+
+/* ---------- top vendidos ---------- */
+
+.lista-top {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.lista-top li {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.top-posicion {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  border-radius: var(--radio-sm);
+  background: var(--color-superficie-2);
+  font-weight: 800;
+  font-size: 0.85rem;
+}
+
+.lista-top li:first-child .top-posicion {
+  background: var(--color-lima);
+}
+
+.top-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.top-fila {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.3rem;
+  font-size: 0.9rem;
+}
+
+.top-barra {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--color-superficie-2);
+  overflow: hidden;
+}
+
+.top-barra span {
+  display: block;
+  height: 100%;
+  background: var(--color-tinta);
+  border-radius: 999px;
+}
+
+.lista-top li:first-child .top-barra span {
+  background: var(--color-lima);
+}
+
+/* ---------- celular ---------- */
+
+@media (max-width: 900px) {
+  .grid-dos {
+    grid-template-columns: 1fr;
+  }
+}
