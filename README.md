@@ -171,5 +171,4 @@ main
 
 - **main:** versión oficial
 - **develop:** integración del trabajo
-- **test:** pruebas
 - **igomez-2025177:** rama de desarrollo personal
