@@ -3,8 +3,6 @@
   gap: 0.5rem;
 }
 
-/* ---------- filtros ---------- */
-
 .filtros {
   display: flex;
   align-items: flex-end;
@@ -31,22 +29,35 @@
   width: auto;
 }
 
-/* ---------- tabla ---------- */
 
 .fecha {
   white-space: nowrap;
 }
 
+.celda-detalle {
+  min-width: 180px;
+  max-width: 280px;
+}
+
 .detalle {
   display: flex;
   flex-direction: column;
-  gap: 0.1rem;
+  gap: 0.15rem;
   font-size: 0.85rem;
-  max-width: 260px;
 }
 
-.nota {
+.detalle-proveedor {
+  font-weight: 700;
+}
+
+.detalle-nota {
   font-style: italic;
+  color: var(--color-texto-suave);
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
 }
 
 .paginacion {
@@ -63,8 +74,6 @@
   display: flex;
   gap: 0.5rem;
 }
-
-/* ---------- entrada / salida ---------- */
 
 .tipo-selector {
   display: grid;
@@ -114,8 +123,6 @@
   border-color: var(--color-tinta);
   background: var(--color-lima-suave);
 }
-
-/* ---------- vista previa del stock ---------- */
 
 .vista-previa {
   display: flex;

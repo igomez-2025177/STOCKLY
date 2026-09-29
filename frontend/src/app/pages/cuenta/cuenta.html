@@ -1,0 +1,140 @@
+<div class="pagina-encabezado">
+  <div>
+    <h1>Mi cuenta</h1>
+    <p>Tus datos y tu contraseña.</p>
+  </div>
+</div>
+
+@if (error()) {
+  <div class="aviso aviso-peligro">{{ error() }}</div>
+}
+
+@if (cargando()) {
+  <p class="texto-suave">Cargando tus datos...</p>
+} @else if (perfil(); as p) {
+  <div class="cuenta-grid">
+    <!-- datos -->
+    <section class="tarjeta">
+      <div class="tarjeta-titulo">
+        <h3>Tus datos</h3>
+        @if (p.conGoogle) {
+          <span class="badge badge-info">Conectada con Google</span>
+        }
+      </div>
+
+      @if (mensajeNombre()) {
+        <div class="aviso aviso-exito">{{ mensajeNombre() }}</div>
+      }
+      @if (errorNombre()) {
+        <div class="aviso aviso-peligro">{{ errorNombre() }}</div>
+      }
+
+      <form [formGroup]="formNombre" (ngSubmit)="guardarNombre()" novalidate>
+        <div class="campo">
+          <label for="nombre">Nombre</label>
+          <input id="nombre" class="input" type="text" formControlName="nombre" autocomplete="name" [class.invalido]="nombreInvalido()" />
+          @if (nombreInvalido()) {
+            <span class="error-campo">El nombre es obligatorio (máximo 80 caracteres)</span>
+          }
+        </div>
+
+        <div class="campo">
+          <label for="correo">Correo</label>
+          <input id="correo" class="input" type="email" [value]="p.correo" disabled />
+          <span class="ayuda-campo">Es con lo que inicias sesión, no se puede cambiar</span>
+        </div>
+
+        <div class="botones-form">
+          <button type="submit" class="btn btn-primario" [disabled]="guardandoNombre()">
+            {{ guardandoNombre() ? 'Guardando...' : 'Guardar nombre' }}
+          </button>
+        </div>
+      </form>
+    </section>
+    
+    <section class="tarjeta">
+      <div class="tarjeta-titulo">
+        <h3>{{ p.tienePassword ? 'Cambiar contraseña' : 'Crear contraseña' }}</h3>
+      </div>
+
+      @if (!p.tienePassword) {
+        <div class="aviso aviso-info">
+          Entraste con Google y todavía no tienes contraseña. Si creas una, también vas a poder entrar con tu correo.
+        </div>
+      }
+
+      @if (mensajePassword()) {
+        <div class="aviso aviso-exito">{{ mensajePassword() }}</div>
+      }
+      @if (errorPassword()) {
+        <div class="aviso aviso-peligro">{{ errorPassword() }}</div>
+      }
+
+      <form [formGroup]="formPassword" (ngSubmit)="guardarPassword()" novalidate>
+        @if (p.tienePassword) {
+          <div class="campo">
+            <label for="passwordActual">Contraseña actual</label>
+            <input
+              id="passwordActual"
+              class="input"
+              [type]="verPassword() ? 'text' : 'password'"
+              formControlName="passwordActual"
+              autocomplete="current-password"
+              [class.invalido]="campoPasswordInvalido('passwordActual')"
+            />
+            @if (campoPasswordInvalido('passwordActual')) {
+              <span class="error-campo">Escribe tu contraseña actual</span>
+            }
+          </div>
+        }
+
+        <div class="campo">
+          <label for="passwordNuevo">Contraseña nueva</label>
+          <input
+            id="passwordNuevo"
+            class="input"
+            [type]="verPassword() ? 'text' : 'password'"
+            formControlName="passwordNuevo"
+            autocomplete="new-password"
+            [class.invalido]="campoPasswordInvalido('passwordNuevo')"
+          />
+          @if (campoPasswordInvalido('passwordNuevo')) {
+            <span class="error-campo">Mínimo 8 caracteres</span>
+          }
+        </div>
+
+        <div class="campo">
+          <label for="confirmar">Confirma la contraseña nueva</label>
+          <input
+            id="confirmar"
+            class="input"
+            [type]="verPassword() ? 'text' : 'password'"
+            formControlName="confirmar"
+            autocomplete="new-password"
+            [class.invalido]="campoPasswordInvalido('confirmar') || noCoinciden()"
+          />
+          @if (noCoinciden()) {
+            <span class="error-campo">Las contraseñas no coinciden</span>
+          } @else if (campoPasswordInvalido('confirmar')) {
+            <span class="error-campo">Confirma la contraseña</span>
+          }
+        </div>
+
+        <label class="check">
+          <input type="checkbox" [checked]="verPassword()" (change)="verPassword.set($any($event.target).checked)" />
+          Mostrar contraseñas
+        </label>
+
+        <div class="botones-form">
+          <button type="submit" class="btn btn-primario" [disabled]="guardandoPassword()">
+            @if (guardandoPassword()) {
+              Guardando...
+            } @else {
+              {{ p.tienePassword ? 'Cambiar contraseña' : 'Crear contraseña' }}
+            }
+          </button>
+        </div>
+      </form>
+    </section>
+  </div>
+}

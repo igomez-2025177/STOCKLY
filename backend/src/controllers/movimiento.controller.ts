@@ -8,7 +8,6 @@ const MOTIVOS = ["COMPRA", "VENTA", "PERDIDA", "DEVOLUCION", "AJUSTE"] as const;
 type Tipo = (typeof TIPOS)[number];
 type Motivo = (typeof MOTIVOS)[number];
 
-// que motivo va con que tipo
 const MOTIVOS_POR_TIPO: Record<Tipo, Motivo[]> = {
   ENTRADA: ["COMPRA", "DEVOLUCION", "AJUSTE"],
   SALIDA: ["VENTA", "PERDIDA", "DEVOLUCION", "AJUSTE"],
@@ -17,7 +16,7 @@ const MOTIVOS_POR_TIPO: Record<Tipo, Motivo[]> = {
 const MOTIVOS_CON_NOTA: Motivo[] = ["PERDIDA", "AJUSTE"];
 
 const INCLUDE_MOVIMIENTO = {
-  producto: { select: { id: true, sku: true, nombre: true, unidad: true } },
+  producto: { select: { id: true, nombre: true } },
   usuario: { select: { id: true, nombre: true } },
   proveedor: { select: { id: true, nombre: true } },
 };
@@ -59,6 +58,7 @@ function parseFecha(value: unknown, finDelDia: boolean): Date | null {
 
 export async function registrarMovimiento(req: AuthRequest, res: Response) {
   try {
+    const usuarioId = req.user!.userId;
     const tipo = String(req.body.tipo ?? "").toUpperCase() as Tipo;
     const motivo = String(req.body.motivo ?? "").toUpperCase() as Motivo;
 
@@ -94,8 +94,6 @@ export async function registrarMovimiento(req: AuthRequest, res: Response) {
       return res.status(400).json({ error: `Para una ${motivo} tienes que explicar qué pasó en la nota` });
     }
 
-    const referencia = textoOpcional(req.body.referencia);
-
     const aceptaProveedor = motivo === "COMPRA" || (tipo === "SALIDA" && motivo === "DEVOLUCION");
     let proveedorIdBody: number | null = null;
 
@@ -127,10 +125,8 @@ export async function registrarMovimiento(req: AuthRequest, res: Response) {
       }
     }
 
-    const usuarioId = req.user!.userId;
-
     const resultado = await prisma.$transaction(async (tx) => {
-      const producto = await tx.producto.findUnique({ where: { id: productoId } });
+      const producto = await tx.producto.findFirst({ where: { id: productoId, usuarioId } });
 
       if (!producto) {
         throw new ErrorNegocio(404, "Producto no encontrado");
@@ -147,7 +143,7 @@ export async function registrarMovimiento(req: AuthRequest, res: Response) {
       }
 
       if (proveedorId) {
-        const proveedor = await tx.proveedor.findUnique({ where: { id: proveedorId } });
+        const proveedor = await tx.proveedor.findFirst({ where: { id: proveedorId, usuarioId } });
 
         if (!proveedor) {
           throw new ErrorNegocio(404, "El proveedor no existe");
@@ -160,7 +156,7 @@ export async function registrarMovimiento(req: AuthRequest, res: Response) {
 
       if (tipo === "SALIDA") {
         const actualizado = await tx.producto.updateMany({
-          where: { id: productoId, stockActual: { gte: cantidad } },
+          where: { id: productoId, usuarioId, stockActual: { gte: cantidad } },
           data: { stockActual: { decrement: cantidad } },
         });
 
@@ -197,7 +193,6 @@ export async function registrarMovimiento(req: AuthRequest, res: Response) {
           cantidad,
           stockResultante: productoFinal.stockActual,
           precioUnitario,
-          referencia,
           nota,
           productoId,
           usuarioId,
@@ -235,8 +230,8 @@ export async function registrarMovimiento(req: AuthRequest, res: Response) {
 
 export async function listarMovimientos(req: AuthRequest, res: Response) {
   try {
+    const usuarioId = req.user!.userId;
     const productoId = parseId(req.query.productoId);
-    const usuarioId = parseId(req.query.usuarioId);
     const tipoTexto = textoOpcional(req.query.tipo)?.toUpperCase() ?? null;
     const motivoTexto = textoOpcional(req.query.motivo)?.toUpperCase() ?? null;
 
@@ -266,8 +261,8 @@ export async function listarMovimientos(req: AuthRequest, res: Response) {
     const limite = Math.min(100, Math.max(1, parseInt(String(req.query.limite ?? "20"), 10) || 20));
 
     const where = {
+      usuarioId,
       ...(productoId ? { productoId } : {}),
-      ...(usuarioId ? { usuarioId } : {}),
       ...(tipo ? { tipo } : {}),
       ...(motivo ? { motivo } : {}),
       ...(desde || hasta
@@ -305,14 +300,15 @@ export async function listarMovimientos(req: AuthRequest, res: Response) {
 
 export async function obtenerMovimiento(req: AuthRequest, res: Response) {
   try {
+    const usuarioId = req.user!.userId;
     const id = parseId(req.params.id);
 
     if (!id) {
       return res.status(400).json({ error: "Id inválido" });
     }
 
-    const movimiento = await prisma.movimiento.findUnique({
-      where: { id },
+    const movimiento = await prisma.movimiento.findFirst({
+      where: { id, usuarioId },
       include: INCLUDE_MOVIMIENTO,
     });
 
