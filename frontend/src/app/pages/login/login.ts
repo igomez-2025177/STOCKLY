@@ -1,8 +1,9 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, NgZone, OnDestroy, OnInit, inject, signal, viewChild } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
-import { HttpErrorResponse } from '@angular/common/http';
 import { AuthService } from '../../core/services/auth.service';
+import { GOOGLE_CLIENT_ID } from '../../core/config';
+import { mensajeError } from '../../core/utils/errores';
 
 type Campo = 'nombre' | 'correo' | 'password';
 type Modo = 'login' | 'registro';
@@ -13,16 +14,20 @@ type Modo = 'login' | 'registro';
   templateUrl: './login.html',
   styleUrl: './login.css',
 })
-export class Login implements OnInit {
+export class Login implements OnInit, AfterViewInit, OnDestroy {
   private fb = inject(FormBuilder);
   private auth = inject(AuthService);
   private router = inject(Router);
+  private zone = inject(NgZone);
+
+  private readonly botonGoogle = viewChild<ElementRef<HTMLDivElement>>('botonGoogle');
 
   readonly modo = signal<Modo>('login');
   readonly cargando = signal(false);
   readonly verPassword = signal(false);
   readonly error = signal<string | null>(null);
   readonly aviso = signal<string | null>(null);
+  readonly googleNoDisponible = signal(false);
 
   readonly form = this.fb.nonNullable.group({
     nombre: [''],
@@ -30,9 +35,66 @@ export class Login implements OnInit {
     password: ['', [Validators.required]],
   });
 
+  private timerGoogle?: ReturnType<typeof setTimeout>;
+
   ngOnInit(): void {
     this.aviso.set(this.auth.mensajeLogin());
     this.auth.mensajeLogin.set(null);
+  }
+
+  ngAfterViewInit(): void {
+    this.iniciarGoogle();
+  }
+
+  ngOnDestroy(): void {
+    clearTimeout(this.timerGoogle);
+  }
+
+  private iniciarGoogle(intentos = 0): void {
+    const google = (window as any).google;
+
+    if (!google?.accounts?.id) {
+      if (intentos < 50) {
+        this.timerGoogle = setTimeout(() => this.iniciarGoogle(intentos + 1), 100);
+      } else {
+        this.googleNoDisponible.set(true);
+      }
+      return;
+    }
+
+    google.accounts.id.initialize({
+      client_id: GOOGLE_CLIENT_ID,
+      callback: (respuesta: { credential: string }) => {
+        this.zone.run(() => this.alResponderGoogle(respuesta.credential));
+      },
+    });
+
+    const contenedor = this.botonGoogle()?.nativeElement;
+
+    if (contenedor) {
+      google.accounts.id.renderButton(contenedor, {
+        theme: 'outline',
+        size: 'large',
+        text: 'continue_with',
+        shape: 'rectangular',
+        locale: 'es',
+        width: Math.min(contenedor.offsetWidth || 400, 400),
+      });
+    }
+  }
+
+  private alResponderGoogle(credential: string): void {
+    this.error.set(null);
+    this.aviso.set(null);
+    this.cargando.set(true);
+
+    this.auth.loginGoogle(credential).subscribe({
+      next: () => this.router.navigate(['/dashboard']),
+      error: (err) => {
+        this.cargando.set(false);
+        this.error.set(mensajeError(err, 'No se pudo entrar con Google, intenta de nuevo'));
+      },
+    });
   }
 
   cambiarModo(modo: Modo): void {
@@ -79,14 +141,9 @@ export class Login implements OnInit {
 
     peticion.subscribe({
       next: () => this.router.navigate(['/dashboard']),
-      error: (err: HttpErrorResponse) => {
+      error: (err) => {
         this.cargando.set(false);
-
-        if (err.status === 0) {
-          this.error.set('No se pudo conectar con el servidor. Revisa que el backend esté corriendo');
-        } else {
-          this.error.set(err.error?.error ?? 'Ocurrió un error, intenta de nuevo');
-        }
+        this.error.set(mensajeError(err));
       },
     });
   }

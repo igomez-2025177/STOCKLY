@@ -79,8 +79,8 @@
           <th>Producto</th>
           <th>Movimiento</th>
           <th class="derecha">Cantidad</th>
-          <th class="derecha">Quedó</th>
-          <th class="derecha">Precio u.</th>
+          <th class="derecha">Quedaron</th>
+          <th class="derecha">Precio c/u</th>
           <th>Detalle</th>
           <th>Usuario</th>
         </tr>
@@ -92,10 +92,7 @@
               {{ m.fecha | date: 'd MMM y' }}<br />
               <span class="texto-tenue">{{ m.fecha | date: 'h:mm a' }}</span>
             </td>
-            <td>
-              <span class="negrita">{{ m.producto.nombre }}</span><br />
-              <span class="texto-tenue mono">{{ m.producto.sku }}</span>
-            </td>
+            <td class="negrita">{{ m.producto.nombre }}</td>
             <td>
               <span
                 class="badge"
@@ -110,10 +107,7 @@
             <td class="derecha negrita" [class.texto-exito]="m.tipo === 'ENTRADA'">
               {{ m.tipo === 'ENTRADA' ? '+' : '−' }}{{ m.cantidad }}
             </td>
-            <td class="derecha">
-              {{ m.stockResultante }}
-              <span class="texto-tenue">{{ unidad(m.producto.unidad, m.stockResultante) }}</span>
-            </td>
+            <td class="derecha">{{ m.stockResultante }}</td>
             <td class="derecha">
               @if (m.precioUnitario !== null) {
                 {{ m.precioUnitario | currency: 'GTQ' : 'symbol-narrow' }}
@@ -125,13 +119,10 @@
               @if (m.proveedor) {
                 <span>{{ m.proveedor.nombre }}</span>
               }
-              @if (m.referencia) {
-                <span class="mono">{{ m.referencia }}</span>
-              }
               @if (m.nota) {
                 <span class="texto-suave nota">{{ m.nota }}</span>
               }
-              @if (!m.proveedor && !m.referencia && !m.nota) {
+              @if (!m.proveedor && !m.nota) {
                 <span class="texto-tenue">—</span>
               }
             </td>
@@ -207,7 +198,7 @@
         <select id="productoId" class="select" formControlName="productoId" [class.invalido]="campoInvalido('productoId')">
           <option value="">Escoge un producto...</option>
           @for (p of productos(); track p.id) {
-            <option [value]="p.id">{{ p.nombre }} ({{ p.stockActual }} {{ unidad(p.unidad, p.stockActual) }})</option>
+            <option [value]="p.id">{{ p.nombre }} (hay {{ p.stockActual }})</option>
           }
         </select>
         @if (campoInvalido('productoId')) {
@@ -227,7 +218,7 @@
 
       @if (aceptaPrecio()) {
         <div class="campo">
-          <label for="precioUnitario">Precio por unidad (Q)</label>
+          <label for="precioUnitario">Precio de cada uno (Q)</label>
           <input id="precioUnitario" class="input" type="number" min="0" step="0.01" formControlName="precioUnitario" [class.invalido]="campoInvalido('precioUnitario')" />
           <span class="ayuda-campo">
             @if (motivoActual() === 'COMPRA') {
@@ -244,10 +235,10 @@
     @if (vistaPrevia(); as v) {
       <div class="vista-previa" [class.vista-mala]="!v.alcanza" [class.vista-alerta]="v.alcanza && v.bajoMinimo">
         <div>
-          Stock: <strong>{{ v.antes }}</strong> → <strong>{{ v.despues }}</strong> {{ unidad(v.unidad, v.despues) }}
+          Hay <strong>{{ v.antes }}</strong> → van a quedar <strong>{{ v.despues }}</strong> {{ unidades(v.despues) }}
         </div>
         @if (!v.alcanza) {
-          <small>No alcanza: solo hay {{ v.antes }} {{ unidad(v.unidad, v.antes) }}</small>
+          <small>No alcanza: solo hay {{ v.antes }} {{ unidades(v.antes) }}</small>
         } @else if (v.bajoMinimo) {
           <small>Va a quedar en su mínimo o debajo (mínimo {{ v.minimo }})</small>
         }
@@ -257,24 +248,17 @@
       </div>
     }
 
-    <div class="fila-campos">
-      @if (aceptaProveedor()) {
-        <div class="campo">
-          <label for="proveedorId">Proveedor</label>
-          <select id="proveedorId" class="select" formControlName="proveedorId">
-            <option value="">Sin proveedor</option>
-            @for (p of proveedores(); track p.id) {
-              <option [value]="p.id">{{ p.nombre }}</option>
-            }
-          </select>
-        </div>
-      }
-
+    @if (aceptaProveedor()) {
       <div class="campo">
-        <label for="referencia">No. de factura o recibo</label>
-        <input id="referencia" class="input mono" type="text" formControlName="referencia" placeholder="Opcional, ej. FAC-001" />
+        <label for="proveedorId">Proveedor</label>
+        <select id="proveedorId" class="select" formControlName="proveedorId">
+          <option value="">Sin proveedor</option>
+          @for (p of proveedores(); track p.id) {
+            <option [value]="p.id">{{ p.nombre }}</option>
+          }
+        </select>
       </div>
-    </div>
+    }
 
     <div class="campo">
       <label for="nota">Nota {{ pideNota() ? '*' : '' }}</label>

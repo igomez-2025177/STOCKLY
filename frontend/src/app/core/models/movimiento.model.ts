@@ -8,10 +8,9 @@ export interface Movimiento {
   cantidad: number;
   stockResultante: number;
   precioUnitario: string | null;
-  referencia: string | null;
   nota: string | null;
   fecha: string;
-  producto: { id: number; sku: string; nombre: string; unidad: string };
+  producto: { id: number; nombre: string };
   usuario: { id: number; nombre: string };
   proveedor: { id: number; nombre: string } | null;
 }
@@ -48,6 +47,10 @@ export function ayudaMotivo(tipo: TipoMovimiento, motivo: MotivoMovimiento): str
   }
 }
 
+export function textoUnidades(cantidad: number): string {
+  return Math.abs(cantidad) === 1 ? 'unidad' : 'unidades';
+}
+
 export interface MovimientoPayload {
   tipo: TipoMovimiento;
   motivo: MotivoMovimiento;
@@ -55,7 +58,6 @@ export interface MovimientoPayload {
   productoId: number;
   proveedorId: number | null;
   precioUnitario: number | null;
-  referencia: string;
   nota: string;
 }
 

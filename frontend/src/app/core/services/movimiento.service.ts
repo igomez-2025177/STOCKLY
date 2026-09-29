@@ -17,6 +17,7 @@ export class MovimientoService {
   listar(filtros: FiltrosMovimiento = {}): Observable<ListaMovimientos> {
     let params = new HttpParams();
 
+    // solo se mandan los filtros que tienen valor
     for (const [clave, valor] of Object.entries(filtros)) {
       if (valor !== undefined && valor !== null && valor !== '') {
         params = params.set(clave, String(valor));

@@ -38,6 +38,12 @@ export class AuthService {
       .pipe(tap((res) => this.guardarSesion(res)));
   }
 
+  loginGoogle(credential: string): Observable<AuthResponse> {
+    return this.http
+      .post<AuthResponse>(`${API_URL}/auth/google`, { credential })
+      .pipe(tap((res) => this.guardarSesion(res)));
+  }
+
   refrescarUsuario(): Observable<{ user: Usuario }> {
     return this.http.get<{ user: Usuario }>(`${API_URL}/auth/me`).pipe(
       tap(({ user }) => {
@@ -50,6 +56,12 @@ export class AuthService {
   logout(mensaje?: string): void {
     this.limpiarSesion();
     this.mensajeLogin.set(mensaje ?? null);
+
+    try {
+      (window as any).google?.accounts?.id?.disableAutoSelect();
+    } catch {
+    }
+
     this.router.navigate(['/login']);
   }
 

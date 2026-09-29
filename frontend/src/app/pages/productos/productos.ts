@@ -1,23 +1,22 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { CurrencyPipe, LowerCasePipe } from '@angular/common';
+import { CurrencyPipe } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import { ProductoService } from '../../core/services/producto.service';
 import { CategoriaService } from '../../core/services/categoria.service';
 import { ProveedorService } from '../../core/services/proveedor.service';
-import { Producto, ProductoPayload, UNIDADES, Unidad } from '../../core/models/producto.model';
+import { Producto, ProductoPayload } from '../../core/models/producto.model';
 import { Categoria } from '../../core/models/categoria.model';
 import { Proveedor } from '../../core/models/proveedor.model';
+import { textoUnidades } from '../../core/models/movimiento.model';
 import { mensajeError } from '../../core/utils/errores';
 import { Modal } from '../../shared/modal/modal';
 
 type Campo =
-  | 'sku'
   | 'nombre'
   | 'descripcion'
-  | 'unidad'
   | 'ubicacion'
   | 'precioCompra'
   | 'precioVenta'
@@ -29,7 +28,7 @@ const SOLO_ENTEROS = /^\d+$/;
 
 @Component({
   selector: 'app-productos',
-  imports: [ReactiveFormsModule, CurrencyPipe, LowerCasePipe, RouterLink, Modal],
+  imports: [ReactiveFormsModule, CurrencyPipe, RouterLink, Modal],
   templateUrl: './productos.html',
   styleUrl: './productos.css',
 })
@@ -39,7 +38,7 @@ export class Productos implements OnInit {
   private proveedorService = inject(ProveedorService);
   private fb = inject(FormBuilder);
 
-  readonly unidades = UNIDADES;
+  readonly textoUnidades = textoUnidades;
 
   readonly productos = signal<Producto[]>([]);
   readonly categorias = signal<Categoria[]>([]);
@@ -62,10 +61,8 @@ export class Productos implements OnInit {
   readonly reactivarId = signal<number | null>(null);
 
   readonly form = this.fb.group({
-    sku: ['', [Validators.required, Validators.maxLength(40), Validators.pattern(/^[A-Za-z0-9\-_.]+$/)]],
     nombre: ['', [Validators.required, Validators.maxLength(120)]],
     descripcion: ['', [Validators.maxLength(300)]],
-    unidad: ['UNIDAD' as Unidad, [Validators.required]],
     ubicacion: ['', [Validators.maxLength(60)]],
     precioCompra: [0 as number | null, [Validators.min(0)]],
     precioVenta: [null as number | null, [Validators.required, Validators.min(0)]],
@@ -94,9 +91,7 @@ export class Productos implements OnInit {
     const texto = this.busqueda().trim().toLowerCase();
     if (!texto) return this.productos();
 
-    return this.productos().filter(
-      (p) => p.nombre.toLowerCase().includes(texto) || p.sku.toLowerCase().includes(texto)
-    );
+    return this.productos().filter((p) => p.nombre.toLowerCase().includes(texto));
   });
 
   readonly hayFiltros = computed(
@@ -174,17 +169,11 @@ export class Productos implements OnInit {
     this.cargar();
   }
 
-  textoUnidad(unidad: Unidad): string {
-    return UNIDADES.find((u) => u.valor === unidad)?.texto ?? unidad;
-  }
-
   abrirNuevo(): void {
     this.editando.set(null);
     this.form.reset({
-      sku: '',
       nombre: '',
       descripcion: '',
-      unidad: 'UNIDAD',
       ubicacion: '',
       precioCompra: 0,
       precioVenta: null,
@@ -201,10 +190,8 @@ export class Productos implements OnInit {
   abrirEditar(producto: Producto): void {
     this.editando.set(producto);
     this.form.reset({
-      sku: producto.sku,
       nombre: producto.nombre,
       descripcion: producto.descripcion ?? '',
-      unidad: producto.unidad,
       ubicacion: producto.ubicacion ?? '',
       precioCompra: Number(producto.precioCompra),
       precioVenta: Number(producto.precioVenta),
@@ -242,10 +229,8 @@ export class Productos implements OnInit {
     const actual = this.editando();
 
     const datos: ProductoPayload = {
-      sku: (v.sku ?? '').trim(),
       nombre: (v.nombre ?? '').trim(),
       descripcion: v.descripcion ?? '',
-      unidad: v.unidad ?? 'UNIDAD',
       ubicacion: v.ubicacion ?? '',
       precioCompra: Number(v.precioCompra) || 0,
       precioVenta: Number(v.precioVenta),

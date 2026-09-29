@@ -34,7 +34,7 @@
   <input
     type="search"
     class="input buscador"
-    placeholder="Buscar por nombre o SKU..."
+    placeholder="Buscar producto..."
     [value]="busqueda()"
     (input)="busqueda.set($any($event.target).value)"
   />
@@ -84,7 +84,6 @@
     <table class="tabla">
       <thead>
         <tr>
-          <th>SKU</th>
           <th>Producto</th>
           <th class="derecha">Stock</th>
           <th class="derecha">Precio venta</th>
@@ -96,7 +95,6 @@
       <tbody>
         @for (p of filtrados(); track p.id) {
           <tr [class.fila-apagada]="!p.activo">
-            <td class="mono">{{ p.sku }}</td>
             <td>
               <span class="negrita">{{ p.nombre }}</span><br />
               <span class="texto-tenue">
@@ -113,7 +111,7 @@
                 [class.badge-alerta]="p.stockBajo && p.stockActual > 0"
                 [class.badge-exito]="!p.stockBajo"
               >
-                {{ p.stockActual }} {{ textoUnidad(p.unidad) | lowercase }}
+                {{ p.stockActual }} {{ textoUnidades(p.stockActual) }}
               </span>
               <br /><span class="texto-tenue minimo">mín. {{ p.stockMinimo }}</span>
             </td>
@@ -170,28 +168,10 @@
     <!-- datos -->
     <h4 class="seccion-form">Datos</h4>
 
-    <div class="fila-campos">
-      <div class="campo">
-        <label for="sku">SKU / código *</label>
-        <input id="sku" class="input mono" type="text" formControlName="sku" placeholder="COCA-600" [class.invalido]="campoInvalido('sku')" />
-        @if (campoInvalido('sku')) {
-          <span class="error-campo">Obligatorio, solo letras, números y - _ .</span>
-        }
-      </div>
-
-      <div class="campo">
-        <label for="unidad">Se mide en *</label>
-        <select id="unidad" class="select" formControlName="unidad">
-          @for (u of unidades; track u.valor) {
-            <option [value]="u.valor">{{ u.texto }}</option>
-          }
-        </select>
-      </div>
-    </div>
-
     <div class="campo">
       <label for="nombre">Nombre *</label>
       <input id="nombre" class="input" type="text" formControlName="nombre" placeholder="Coca-Cola 600ml" [class.invalido]="campoInvalido('nombre')" />
+      <span class="ayuda-campo">Incluye la presentación si hace falta, ej. "Aceite 1 litro" o "Huevos (cartón de 30)"</span>
       @if (campoInvalido('nombre')) {
         <span class="error-campo">El nombre es obligatorio</span>
       }
@@ -241,6 +221,7 @@
       <div class="campo">
         <label for="precioCompra">Precio de compra (Q)</label>
         <input id="precioCompra" class="input" type="number" min="0" step="0.01" formControlName="precioCompra" [class.invalido]="campoInvalido('precioCompra')" />
+        <span class="ayuda-campo">Lo que te cuesta a ti</span>
         @if (campoInvalido('precioCompra')) {
           <span class="error-campo">No puede ser negativo</span>
         }
@@ -249,6 +230,7 @@
       <div class="campo">
         <label for="precioVenta">Precio de venta (Q) *</label>
         <input id="precioVenta" class="input" type="number" min="0" step="0.01" formControlName="precioVenta" [class.invalido]="campoInvalido('precioVenta')" />
+        <span class="ayuda-campo">Lo que le cobras al cliente</span>
         @if (campoInvalido('precioVenta')) {
           <span class="error-campo">Obligatorio y no negativo</span>
         }
@@ -257,7 +239,7 @@
 
     @if (margen(); as m) {
       <div class="margen" [class.margen-malo]="m.pierde">
-        Ganancia por {{ textoUnidad(form.controls.unidad.value ?? 'UNIDAD') | lowercase }}:
+        Ganas por cada uno que vendes:
         <strong>{{ m.ganancia | currency: 'GTQ' : 'symbol-narrow' }}</strong>
         @if (m.porcentaje !== null) {
           ({{ m.porcentaje.toFixed(0) }}%)
@@ -273,9 +255,9 @@
 
     <div class="fila-campos">
       <div class="campo">
-        <label for="stockMinimo">Stock mínimo *</label>
+        <label for="stockMinimo">Avisarme cuando queden *</label>
         <input id="stockMinimo" class="input" type="number" min="0" step="1" formControlName="stockMinimo" [class.invalido]="campoInvalido('stockMinimo')" />
-        <span class="ayuda-campo">Cuando llegue a este número te avisa</span>
+        <span class="ayuda-campo">Cuando llegue a esta cantidad, te sale la alerta de stock bajo</span>
         @if (campoInvalido('stockMinimo')) {
           <span class="error-campo">Número entero de 0 en adelante</span>
         }
@@ -283,9 +265,9 @@
 
       @if (!editando()) {
         <div class="campo">
-          <label for="stockInicial">Stock inicial</label>
+          <label for="stockInicial">¿Cuántos tienes hoy?</label>
           <input id="stockInicial" class="input" type="number" min="0" step="1" formControlName="stockInicial" [class.invalido]="campoInvalido('stockInicial')" />
-          <span class="ayuda-campo">Lo que ya tienes en el estante hoy</span>
+          <span class="ayuda-campo">Lo que ya hay en el estante al registrarlo</span>
           @if (campoInvalido('stockInicial')) {
             <span class="error-campo">Número entero de 0 en adelante</span>
           }
@@ -295,7 +277,7 @@
 
     @if (editando(); as p) {
       <div class="aviso aviso-info">
-        Stock actual: {{ p.stockActual }}. El stock no se edita aquí, solo cambia con entradas y salidas en Movimientos.
+        Hay {{ p.stockActual }} {{ textoUnidades(p.stockActual) }}. La cantidad no se edita aquí, solo cambia con entradas y salidas en Movimientos.
       </div>
     }
 

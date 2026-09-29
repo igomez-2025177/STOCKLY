@@ -15,24 +15,14 @@ import {
   MovimientoPayload,
   TipoMovimiento,
   ayudaMotivo,
+  textoUnidades,
 } from '../../core/models/movimiento.model';
 import { Producto } from '../../core/models/producto.model';
 import { Proveedor } from '../../core/models/proveedor.model';
 import { mensajeError } from '../../core/utils/errores';
 import { Modal } from '../../shared/modal/modal';
 
-type Campo = 'productoId' | 'cantidad' | 'precioUnitario' | 'referencia' | 'nota';
-
-const UNIDAD_TEXTO: Record<string, [string, string]> = {
-  UNIDAD: ['unidad', 'unidades'],
-  CAJA: ['caja', 'cajas'],
-  PAQUETE: ['paquete', 'paquetes'],
-  BOLSA: ['bolsa', 'bolsas'],
-  DOCENA: ['docena', 'docenas'],
-  LIBRA: ['libra', 'libras'],
-  LITRO: ['litro', 'litros'],
-  METRO: ['metro', 'metros'],
-};
+type Campo = 'productoId' | 'cantidad' | 'precioUnitario' | 'nota';
 
 const POR_PAGINA = 15;
 
@@ -56,6 +46,7 @@ export class Movimientos implements OnInit {
 
   readonly motivoTexto = MOTIVO_TEXTO;
   readonly todosLosMotivos = Object.keys(MOTIVO_TEXTO) as MotivoMovimiento[];
+  readonly unidades = textoUnidades;
 
   readonly movimientos = signal<Movimiento[]>([]);
   readonly total = signal(0);
@@ -91,7 +82,6 @@ export class Movimientos implements OnInit {
       cantidad: [null as number | null, [Validators.required, Validators.min(1), Validators.pattern(/^\d+$/)]],
       proveedorId: [''],
       precioUnitario: [null as number | null, [Validators.min(0)]],
-      referencia: ['', [Validators.maxLength(60)]],
       nota: ['', [Validators.maxLength(300)]],
     },
     { validators: notaSegunMotivo }
@@ -131,7 +121,6 @@ export class Movimientos implements OnInit {
       alcanza: despues >= 0,
       bajoMinimo: despues >= 0 && despues <= producto.stockMinimo,
       minimo: producto.stockMinimo,
-      unidad: producto.unidad,
     };
   });
 
@@ -152,6 +141,7 @@ export class Movimientos implements OnInit {
       this.sugerirDatos();
     });
 
+    // al cambiar producto o motivo se llena solo el precio y el proveedor
     this.form.controls.motivo.valueChanges.pipe(takeUntilDestroyed()).subscribe(() => this.sugerirDatos());
     this.form.controls.productoId.valueChanges.pipe(takeUntilDestroyed()).subscribe(() => this.sugerirDatos());
   }
@@ -221,11 +211,6 @@ export class Movimientos implements OnInit {
     this.cargar();
   }
 
-  unidad(unidad: string, cantidad: number): string {
-    const textos = UNIDAD_TEXTO[unidad] ?? [unidad.toLowerCase(), unidad.toLowerCase()];
-    return Math.abs(cantidad) === 1 ? textos[0] : textos[1];
-  }
-
   abrirNuevo(tipo: TipoMovimiento): void {
     this.form.reset({
       tipo,
@@ -234,7 +219,6 @@ export class Movimientos implements OnInit {
       cantidad: null,
       proveedorId: '',
       precioUnitario: null,
-      referencia: '',
       nota: '',
     });
     this.errorForm.set(null);
@@ -288,7 +272,7 @@ export class Movimientos implements OnInit {
     const vista = this.vistaPrevia();
 
     if (vista && !vista.alcanza) {
-      this.errorForm.set(`No alcanza: solo hay ${vista.antes} ${this.unidad(vista.unidad, vista.antes)}`);
+      this.errorForm.set(`No alcanza: solo hay ${vista.antes} ${textoUnidades(vista.antes)}`);
       return;
     }
 
@@ -307,7 +291,6 @@ export class Movimientos implements OnInit {
         this.aceptaPrecio() && v.precioUnitario !== null && String(v.precioUnitario) !== ''
           ? Number(v.precioUnitario)
           : null,
-      referencia: (v.referencia ?? '').trim(),
       nota: (v.nota ?? '').trim(),
     };
 
