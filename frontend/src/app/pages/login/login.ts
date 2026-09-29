@@ -8,6 +8,8 @@ import { mensajeError } from '../../core/utils/errores';
 type Campo = 'nombre' | 'correo' | 'password';
 type Modo = 'login' | 'registro';
 
+const FORM_VACIO = { nombre: '', correo: '', password: '' };
+
 @Component({
   selector: 'app-login',
   imports: [ReactiveFormsModule],
@@ -28,6 +30,7 @@ export class Login implements OnInit, AfterViewInit, OnDestroy {
   readonly error = signal<string | null>(null);
   readonly aviso = signal<string | null>(null);
   readonly googleNoDisponible = signal(false);
+  readonly camposBloqueados = signal(true);
 
   readonly form = this.fb.nonNullable.group({
     nombre: [''],
@@ -36,6 +39,7 @@ export class Login implements OnInit, AfterViewInit, OnDestroy {
   });
 
   private timerGoogle?: ReturnType<typeof setTimeout>;
+  private timerLimpiar?: ReturnType<typeof setTimeout>;
 
   ngOnInit(): void {
     this.aviso.set(this.auth.mensajeLogin());
@@ -44,10 +48,21 @@ export class Login implements OnInit, AfterViewInit, OnDestroy {
 
   ngAfterViewInit(): void {
     this.iniciarGoogle();
+
+    this.timerLimpiar = setTimeout(() => {
+      if (this.camposBloqueados()) {
+        this.form.reset(FORM_VACIO);
+      }
+    }, 400);
   }
 
   ngOnDestroy(): void {
     clearTimeout(this.timerGoogle);
+    clearTimeout(this.timerLimpiar);
+  }
+
+  desbloquearCampos(): void {
+    this.camposBloqueados.set(false);
   }
 
   private iniciarGoogle(intentos = 0): void {
@@ -101,6 +116,9 @@ export class Login implements OnInit, AfterViewInit, OnDestroy {
     this.modo.set(modo);
     this.error.set(null);
     this.aviso.set(null);
+    this.verPassword.set(false);
+
+    this.form.reset(FORM_VACIO);
 
     const { nombre, password } = this.form.controls;
 

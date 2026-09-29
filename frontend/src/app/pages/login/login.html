@@ -1,5 +1,4 @@
 <main class="login">
-  <!-- panel de marca, lado izquierdo -->
   <section class="login-marca">
     <div class="marca marca-clara">
       <img src="stockly-icon.png" alt="" />
@@ -8,19 +7,17 @@
 
     <div class="login-mensaje">
       <h1>Tu inventario,<br /><span class="resaltado">en orden.</span></h1>
-      <p>Controla lo que tienes, lo que entra y lo que sale de tu bodega, sin cuadernos ni cuentas a mano.</p>
+      <p>Controla lo que tiene, lo que entra y lo que sale de su bodega, sin cuadernos ni cuentas a mano.</p>
 
       <ul class="login-puntos">
         <li>Stock actualizado con cada entrada y salida</li>
         <li>Alertas cuando algo se está acabando</li>
-        <li>Historial de quién movió qué y cuándo</li>
       </ul>
     </div>
 
-    <small class="login-pie">Isai Gómez · 2025-177</small>
+    <small class="login-pie"></small>
   </section>
 
-  <!-- formulario, lado derecho -->
   <section class="login-formulario">
     <div class="login-caja">
       <div class="marca login-marca-movil">
@@ -30,10 +27,10 @@
 
       @if (modo() === 'registro') {
         <h2>Crear cuenta</h2>
-        <p class="texto-suave">Regístrate para empezar a controlar tu inventario.</p>
+        <p class="texto-suave">Regístrase para empezar a controlar su inventario.</p>
       } @else {
         <h2>Iniciar sesión</h2>
-        <p class="texto-suave">Entra con Google o con tu correo y contraseña.</p>
+        <p class="texto-suave">Entre con Google o con su correo y contraseña.</p>
       }
 
       @if (aviso()) {
@@ -44,27 +41,29 @@
         <div class="aviso aviso-peligro">{{ error() }}</div>
       }
 
-      <!-- boton de google, siempre esta en el html pa que google lo pueda dibujar -->
       <div class="google-contenedor" [class.google-cargando]="cargando()">
         <div #botonGoogle class="google-boton"></div>
         @if (googleNoDisponible()) {
-          <small class="texto-tenue">No se pudo cargar el botón de Google. Revisa tu conexión.</small>
+          <small class="texto-tenue">No se pudo cargar el botón de Google. Revise su conexión.</small>
         }
       </div>
 
       <div class="separador"><span>o con tu correo</span></div>
 
-      <form [formGroup]="form" (ngSubmit)="enviar()" novalidate>
+      <form [formGroup]="form" (ngSubmit)="enviar()" autocomplete="off" novalidate>
         @if (modo() === 'registro') {
           <div class="campo">
             <label for="nombre">Nombre</label>
             <input
               id="nombre"
+              name="stockly-nombre"
               class="input"
               type="text"
               formControlName="nombre"
               placeholder="Tu nombre"
-              autocomplete="name"
+              autocomplete="off"
+              [readonly]="camposBloqueados()"
+              (focus)="desbloquearCampos()"
               [class.invalido]="campoInvalido('nombre')"
             />
             @if (campoInvalido('nombre')) {
@@ -77,11 +76,14 @@
           <label for="correo">Correo</label>
           <input
             id="correo"
+            name="stockly-correo"
             class="input"
             type="email"
             formControlName="correo"
             placeholder="tucorreo@gmail.com"
-            autocomplete="email"
+            autocomplete="off"
+            [readonly]="camposBloqueados()"
+            (focus)="desbloquearCampos()"
             [class.invalido]="campoInvalido('correo')"
           />
           @if (campoInvalido('correo')) {
@@ -94,11 +96,14 @@
           <div class="input-password">
             <input
               id="password"
+              name="stockly-clave"
               class="input"
               [type]="verPassword() ? 'text' : 'password'"
               formControlName="password"
               placeholder="••••••••"
-              [attr.autocomplete]="modo() === 'registro' ? 'new-password' : 'current-password'"
+              autocomplete="new-password"
+              [readonly]="camposBloqueados()"
+              (focus)="desbloquearCampos()"
               [class.invalido]="campoInvalido('password')"
             />
             <button
@@ -128,10 +133,10 @@
 
       <p class="login-ayuda texto-suave">
         @if (modo() === 'registro') {
-          ¿Ya tienes cuenta?
+          ¿Ya tiene cuenta?
           <a href="#" (click)="$event.preventDefault(); cambiarModo('login')">Inicia sesión</a>
         } @else {
-          ¿No tienes cuenta?
+          ¿No tiene cuenta?
           <a href="#" (click)="$event.preventDefault(); cambiarModo('registro')">Crea una</a>
         }
       </p>
