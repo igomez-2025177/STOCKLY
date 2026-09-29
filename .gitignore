@@ -1,5 +1,31 @@
+# dependencias
 node_modules/
-.env
+
+# builds
 dist/
+out-tsc/
+tmp/
 .angular/
+
+# cliente generado de prisma (se crea con prisma generate)
 backend/src/generated/
+
+# pruebas
+coverage/
+testem.log
+__screenshots__/
+
+# logs
+*.log
+
+# herramientas del editor / IA
+.agents/
+.claude/
+.windsurf/
+.idea/
+.history/
+skills-lock.json
+
+# sistema
+.DS_Store
+Thumbs.db

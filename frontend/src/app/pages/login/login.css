@@ -1,0 +1,187 @@
+.login {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  min-height: 100vh;
+}
+
+.login-marca {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 2rem;
+  padding: 2.5rem 3rem;
+  background: var(--color-tinta);
+  color: var(--color-crema);
+  position: relative;
+  overflow: hidden;
+}
+
+.login-marca::after {
+  content: '';
+  position: absolute;
+  right: -60px;
+  bottom: -60px;
+  width: 220px;
+  height: 220px;
+  background: var(--color-lima);
+  opacity: 0.9;
+}
+
+.marca-clara .marca-texto {
+  color: var(--color-crema);
+}
+
+.marca-clara img {
+  filter: invert(1);
+}
+
+.login-mensaje {
+  position: relative;
+  z-index: 1;
+  max-width: 460px;
+}
+
+.login-mensaje h1 {
+  font-size: 3rem;
+  line-height: 1.05;
+  margin-bottom: 1rem;
+}
+
+.resaltado {
+  color: var(--color-lima);
+}
+
+.login-mensaje p {
+  color: #c9c7bd;
+  font-size: 1.05rem;
+}
+
+.login-puntos {
+  list-style: none;
+  padding: 0;
+  margin: 1.5rem 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.login-puntos li {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  font-weight: 600;
+}
+
+.login-puntos li::before {
+  content: '';
+  flex-shrink: 0;
+  width: 10px;
+  height: 10px;
+  background: var(--color-lima);
+}
+
+.login-pie {
+  position: relative;
+  z-index: 1;
+  color: #8d8a7f;
+}
+
+.login-formulario {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1.5rem;
+}
+
+.login-caja {
+  width: 100%;
+  max-width: 400px;
+}
+
+.login-caja h2 {
+  font-size: 1.75rem;
+  margin-top: 0.75rem;
+}
+
+.login-marca-movil {
+  display: none;
+  margin-bottom: 1.5rem;
+}
+
+.google-contenedor {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 1.5rem;
+  min-height: 44px;
+}
+
+.google-boton {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.google-cargando {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.separador {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 1.25rem 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-texto-tenue);
+}
+
+.separador::before,
+.separador::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--color-borde);
+}
+
+.input-password {
+  position: relative;
+}
+
+.input-password .input {
+  padding-right: 5rem;
+}
+
+.ver-password {
+  position: absolute;
+  top: 50%;
+  right: 0.35rem;
+  transform: translateY(-50%);
+}
+
+.login-caja .btn-bloque {
+  margin-top: 0.5rem;
+  padding: 0.85rem 1rem;
+}
+
+.login-ayuda {
+  margin-top: 1.25rem;
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+@media (max-width: 860px) {
+  .login {
+    grid-template-columns: 1fr;
+  }
+
+  .login-marca {
+    display: none;
+  }
+
+  .login-marca-movil {
+    display: inline-flex;
+  }
+}

@@ -1,0 +1,87 @@
+.filtros {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem 1rem;
+  margin-bottom: 1rem;
+}
+
+.buscador {
+  max-width: 280px;
+}
+
+.filtro-select {
+  width: auto;
+  min-width: 180px;
+}
+
+.check {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.check input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--color-tinta);
+}
+
+.conteo {
+  margin: 0 0 0.5rem;
+  font-size: 0.85rem;
+}
+
+.fila-apagada td {
+  opacity: 0.6;
+}
+
+.minimo {
+  font-size: 0.75rem;
+}
+
+.aviso-con-accion {
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* ---------- formulario ---------- */
+
+.seccion-form {
+  margin: 1.25rem 0 0.75rem;
+  padding-bottom: 0.4rem;
+  border-bottom: 1px solid var(--color-borde);
+  font-size: 0.8rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--color-texto-suave);
+}
+
+.seccion-form:first-of-type {
+  margin-top: 0;
+}
+
+.margen {
+  margin: -0.25rem 0 0.5rem;
+  padding: 0.6rem 0.8rem;
+  border-radius: var(--radio);
+  background: var(--color-lima-suave);
+  font-size: 0.9rem;
+}
+
+.margen-malo {
+  background: var(--color-peligro-fondo);
+  color: var(--color-peligro);
+}
+
+.modal-botones {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}

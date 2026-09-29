@@ -1,0 +1,65 @@
+<div class="app">
+  <aside class="sidebar" [class.abierto]="menuAbierto()">
+    <a class="marca sidebar-marca" routerLink="/dashboard" (click)="cerrarMenu()">
+      <img src="stockly-icon.png" alt="" />
+      <span class="marca-texto">Stockly</span>
+    </a>
+
+    <nav class="nav" aria-label="Menú principal">
+      @for (seccion of menu; track seccion.titulo) {
+        <div class="nav-seccion">
+          <span class="nav-titulo">{{ seccion.titulo }}</span>
+
+          @for (link of seccion.links; track link.ruta) {
+            <a class="nav-link" [routerLink]="link.ruta" routerLinkActive="activo" (click)="cerrarMenu()">{{ link.texto }}</a>
+          }
+        </div>
+      }
+    </nav>
+
+    <a class="sidebar-usuario" routerLink="/cuenta" (click)="cerrarMenu()" title="Mi cuenta">
+      <div class="avatar">{{ iniciales() }}</div>
+      <div class="usuario-datos">
+        <span class="usuario-nombre">{{ auth.usuario()?.nombre }}</span>
+        <span class="usuario-rol">{{ auth.usuario()?.correo }}</span>
+      </div>
+    </a>
+
+    <button type="button" class="btn-salir" (click)="cerrarSesion()">Cerrar sesión</button>
+  </aside>
+
+  @if (menuAbierto()) {
+    <div class="sidebar-fondo" (click)="cerrarMenu()"></div>
+  }
+
+  <div class="contenido">
+    <header class="topbar">
+      <button type="button" class="btn btn-fantasma btn-sm" (click)="menuAbierto.set(true)" aria-label="Abrir menú">☰</button>
+      <a class="marca" routerLink="/dashboard">
+        <img src="stockly-icon.png" alt="" />
+        <span class="marca-texto">Stockly</span>
+      </a>
+    </header>
+
+    <main class="principal">
+      <router-outlet />
+    </main>
+  </div>
+</div>
+
+@if (inactividad.avisoVisible()) {
+  <div class="inactividad-fondo">
+    <div class="inactividad-tarjeta" role="alertdialog" aria-live="assertive" aria-label="Sesión por cerrarse">
+      <div class="inactividad-contador">{{ inactividad.segundosRestantes() }}</div>
+      <h3>¿Sigues ahí?</h3>
+      <p>
+        No detectamos actividad. Por seguridad, tu sesión se cerrará en
+        <strong>{{ inactividad.segundosRestantes() }} segundos</strong>.
+      </p>
+      <div class="inactividad-barra">
+        <span [style.width.%]="inactividad.porcentajeRestante()"></span>
+      </div>
+      <p class="texto-tenue inactividad-ayuda">Mueve el mouse o presiona cualquier tecla para seguir.</p>
+    </div>
+  </div>
+}
