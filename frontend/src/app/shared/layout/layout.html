@@ -17,13 +17,13 @@
       }
     </nav>
 
-    <div class="sidebar-usuario">
+    <a class="sidebar-usuario" routerLink="/cuenta" (click)="cerrarMenu()" title="Mi cuenta">
       <div class="avatar">{{ iniciales() }}</div>
       <div class="usuario-datos">
         <span class="usuario-nombre">{{ auth.usuario()?.nombre }}</span>
         <span class="usuario-rol">{{ auth.usuario()?.correo }}</span>
       </div>
-    </div>
+    </a>
 
     <button type="button" class="btn-salir" (click)="cerrarSesion()">Cerrar sesión</button>
   </aside>
@@ -46,3 +46,20 @@
     </main>
   </div>
 </div>
+
+@if (inactividad.avisoVisible()) {
+  <div class="inactividad-fondo">
+    <div class="inactividad-tarjeta" role="alertdialog" aria-live="assertive" aria-label="Sesión por cerrarse">
+      <div class="inactividad-contador">{{ inactividad.segundosRestantes() }}</div>
+      <h3>¿Sigues ahí?</h3>
+      <p>
+        No detectamos actividad. Por seguridad, tu sesión se cerrará en
+        <strong>{{ inactividad.segundosRestantes() }} segundos</strong>.
+      </p>
+      <div class="inactividad-barra">
+        <span [style.width.%]="inactividad.porcentajeRestante()"></span>
+      </div>
+      <p class="texto-tenue inactividad-ayuda">Mueve el mouse o presiona cualquier tecla para seguir.</p>
+    </div>
+  </div>
+}

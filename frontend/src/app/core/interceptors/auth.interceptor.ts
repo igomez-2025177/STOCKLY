@@ -4,6 +4,8 @@ import { catchError, throwError } from 'rxjs';
 import { API_URL } from '../config';
 import { AuthService } from '../services/auth.service';
 
+const RUTAS_SIN_CIERRE = ['/auth/login', '/auth/register', '/auth/google', '/auth/password'];
+
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
   const auth = inject(AuthService);
   const token = auth.token();
@@ -14,9 +16,9 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
 
   return next(peticion).pipe(
     catchError((error: HttpErrorResponse) => {
-      const esRutaAuth = req.url.includes('/auth/login') || req.url.includes('/auth/register');
+      const noCierra = RUTAS_SIN_CIERRE.some((ruta) => req.url.includes(ruta));
 
-      if (error.status === 401 && esApi && !esRutaAuth && auth.estaLogueado()) {
+      if (error.status === 401 && esApi && !noCierra && auth.estaLogueado()) {
         auth.logout('Tu sesión terminó, vuelve a iniciar sesión');
       }
 
