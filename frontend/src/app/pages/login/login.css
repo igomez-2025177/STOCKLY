@@ -108,6 +108,44 @@
   margin-bottom: 1.5rem;
 }
 
+.google-contenedor {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 1.5rem;
+  min-height: 44px;
+}
+
+.google-boton {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.google-cargando {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.separador {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 1.25rem 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-texto-tenue);
+}
+
+.separador::before,
+.separador::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--color-borde);
+}
+
 .input-password {
   position: relative;
 }
@@ -121,10 +159,6 @@
   top: 50%;
   right: 0.35rem;
   transform: translateY(-50%);
-}
-
-.login-caja form {
-  margin-top: 1.5rem;
 }
 
 .login-caja .btn-bloque {

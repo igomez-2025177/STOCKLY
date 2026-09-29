@@ -1,5 +1,5 @@
 import { Component, OnInit, computed, inject, signal } from '@angular/core';
-import { CurrencyPipe, DatePipe, DecimalPipe, LowerCasePipe } from '@angular/common';
+import { CurrencyPipe, DatePipe, DecimalPipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { DashboardService } from '../../core/services/dashboard.service';
@@ -8,7 +8,7 @@ import { MOTIVO_TEXTO } from '../../core/models/movimiento.model';
 
 @Component({
   selector: 'app-dashboard',
-  imports: [CurrencyPipe, DatePipe, DecimalPipe, LowerCasePipe, RouterLink],
+  imports: [CurrencyPipe, DatePipe, DecimalPipe, RouterLink],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.css',
 })
@@ -31,7 +31,6 @@ export class Dashboard implements OnInit {
     return `Buenas noches, ${nombre}`;
   });
 
-  // pa las barritas del top vendidos
   readonly maxVendido = computed(() => {
     const top = this.datos()?.topVendidos ?? [];
     return Math.max(1, ...top.map((t) => t.unidadesVendidas));
