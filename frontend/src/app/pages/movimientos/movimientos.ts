@@ -2,6 +2,7 @@ import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { CurrencyPipe, DatePipe, LowerCasePipe } from '@angular/common';
 import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
+import { ActivatedRoute, Router } from '@angular/router';
 import { map } from 'rxjs';
 import { MovimientoService } from '../../core/services/movimiento.service';
 import { ProductoService } from '../../core/services/producto.service';
@@ -26,6 +27,8 @@ type Campo = 'productoId' | 'cantidad' | 'precioUnitario' | 'nota';
 
 const POR_PAGINA = 15;
 
+const NOTA_STOCK_INICIAL = 'Stock inicial al registrar el producto';
+
 function notaSegunMotivo(grupo: AbstractControl): ValidationErrors | null {
   const motivo = grupo.get('motivo')?.value as MotivoMovimiento;
   const nota = String(grupo.get('nota')?.value ?? '').trim();
@@ -43,6 +46,8 @@ export class Movimientos implements OnInit {
   private productoService = inject(ProductoService);
   private proveedorService = inject(ProveedorService);
   private fb = inject(FormBuilder);
+  private route = inject(ActivatedRoute);
+  private router = inject(Router);
 
   readonly motivoTexto = MOTIVO_TEXTO;
   readonly todosLosMotivos = Object.keys(MOTIVO_TEXTO) as MotivoMovimiento[];
@@ -141,19 +146,29 @@ export class Movimientos implements OnInit {
       this.sugerirDatos();
     });
 
-    // al cambiar producto o motivo se llena solo el precio y el proveedor
     this.form.controls.motivo.valueChanges.pipe(takeUntilDestroyed()).subscribe(() => this.sugerirDatos());
     this.form.controls.productoId.valueChanges.pipe(takeUntilDestroyed()).subscribe(() => this.sugerirDatos());
   }
 
   ngOnInit(): void {
-    this.cargarCatalogos();
     this.cargar();
+
+    const atajo = this.leerAtajo();
+
+    if (atajo) {
+      this.abrirNuevo(atajo.tipo, atajo.productoId);
+      this.limpiarUrl();
+    } else {
+      this.cargarCatalogos();
+    }
   }
 
-  cargarCatalogos(): void {
+  cargarCatalogos(despues?: () => void): void {
     this.productoService.listar().subscribe({
-      next: ({ productos }) => this.productos.set(productos),
+      next: ({ productos }) => {
+        this.productos.set(productos);
+        despues?.();
+      },
       error: (err) => this.error.set(mensajeError(err, 'No se pudieron cargar los productos')),
     });
 
@@ -211,19 +226,31 @@ export class Movimientos implements OnInit {
     this.cargar();
   }
 
-  abrirNuevo(tipo: TipoMovimiento): void {
+  esStockInicial(m: Movimiento): boolean {
+    return m.tipo === 'ENTRADA' && m.motivo === 'AJUSTE' && m.nota === NOTA_STOCK_INICIAL;
+  }
+
+  abrirNuevo(tipo: TipoMovimiento, productoId: number | null = null): void {
     this.form.reset({
       tipo,
       motivo: tipo === 'ENTRADA' ? 'COMPRA' : 'VENTA',
-      productoId: '',
+      productoId: productoId ? String(productoId) : '',
       cantidad: null,
       proveedorId: '',
       precioUnitario: null,
       nota: '',
     });
     this.errorForm.set(null);
-    this.cargarCatalogos();
     this.modalAbierto.set(true);
+
+    this.cargarCatalogos(() => {
+      if (productoId && !this.productos().some((p) => p.id === productoId)) {
+        this.form.controls.productoId.setValue('');
+        this.errorForm.set('Ese producto ya no está disponible. Escoge otro de la lista.');
+        return;
+      }
+      this.sugerirDatos();
+    });
   }
 
   elegirTipo(tipo: TipoMovimiento): void {
@@ -242,6 +269,24 @@ export class Movimientos implements OnInit {
 
   notaInvalida(): boolean {
     return !!this.form.errors?.['notaRequerida'] && this.form.controls.nota.touched;
+  }
+
+  private leerAtajo(): { productoId: number; tipo: TipoMovimiento } | null {
+    const params = this.route.snapshot.queryParamMap;
+    const productoId = Number(params.get('producto'));
+
+    if (!Number.isInteger(productoId) || productoId <= 0) return null;
+
+    const tipo: TipoMovimiento = params.get('tipo') === 'ENTRADA' ? 'ENTRADA' : 'SALIDA';
+    return { productoId, tipo };
+  }
+
+  private limpiarUrl(): void {
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: {},
+      replaceUrl: true,
+    });
   }
 
   private sugerirDatos(): void {

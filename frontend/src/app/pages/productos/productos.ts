@@ -2,7 +2,7 @@ import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { CurrencyPipe } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import { ProductoService } from '../../core/services/producto.service';
 import { CategoriaService } from '../../core/services/categoria.service';
@@ -10,7 +10,7 @@ import { ProveedorService } from '../../core/services/proveedor.service';
 import { Producto, ProductoPayload } from '../../core/models/producto.model';
 import { Categoria } from '../../core/models/categoria.model';
 import { Proveedor } from '../../core/models/proveedor.model';
-import { textoUnidades } from '../../core/models/movimiento.model';
+import { TipoMovimiento, textoUnidades } from '../../core/models/movimiento.model';
 import { mensajeError } from '../../core/utils/errores';
 import { Modal } from '../../shared/modal/modal';
 
@@ -37,6 +37,7 @@ export class Productos implements OnInit {
   private categoriaService = inject(CategoriaService);
   private proveedorService = inject(ProveedorService);
   private fb = inject(FormBuilder);
+  private router = inject(Router);
 
   readonly textoUnidades = textoUnidades;
 
@@ -167,6 +168,14 @@ export class Productos implements OnInit {
     this.filtroProveedor.set(null);
     this.soloStockBajo.set(false);
     this.cargar();
+  }
+
+  registrarMovimiento(producto: Producto): void {
+    const tipo: TipoMovimiento = producto.stockActual === 0 ? 'ENTRADA' : 'SALIDA';
+
+    this.router.navigate(['/movimientos'], {
+      queryParams: { producto: producto.id, tipo },
+    });
   }
 
   abrirNuevo(): void {

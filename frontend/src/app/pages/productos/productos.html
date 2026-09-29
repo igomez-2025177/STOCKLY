@@ -29,7 +29,6 @@
   </div>
 }
 
-<!-- filtros -->
 <div class="filtros">
   <input
     type="search"
@@ -132,6 +131,16 @@
             </td>
             <td>
               <div class="acciones">
+                @if (p.activo) {
+                  <button
+                    type="button"
+                    class="btn btn-acento btn-sm"
+                    (click)="registrarMovimiento(p)"
+                    [title]="p.stockActual === 0 ? 'Registrar una entrada de este producto' : 'Registrar una salida de este producto'"
+                  >
+                    Movimiento
+                  </button>
+                }
                 <button type="button" class="btn btn-secundario btn-sm" (click)="abrirEditar(p)">Editar</button>
                 <button type="button" class="btn btn-secundario btn-sm" (click)="cambiarEstado(p)">
                   {{ p.activo ? 'Desactivar' : 'Reactivar' }}
@@ -146,7 +155,6 @@
   </div>
 }
 
-<!-- formulario de crear / editar -->
 <app-modal
   [titulo]="editando() ? 'Editar producto' : 'Nuevo producto'"
   [abierto]="modalAbierto()"
@@ -214,7 +222,6 @@
       </div>
     </div>
 
-    <!-- precios -->
     <h4 class="seccion-form">Precios</h4>
 
     <div class="fila-campos">
@@ -250,7 +257,6 @@
       </div>
     }
 
-    <!-- inventario -->
     <h4 class="seccion-form">Inventario</h4>
 
     <div class="fila-campos">
