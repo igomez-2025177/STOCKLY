@@ -54,17 +54,21 @@
 
       <div class="separador"><span>o con tu correo</span></div>
 
-      <form [formGroup]="form" (ngSubmit)="enviar()" novalidate>
+      <!-- autocomplete off + campos bloqueados hasta el clic, pa que el navegador no los llene solo -->
+      <form [formGroup]="form" (ngSubmit)="enviar()" autocomplete="off" novalidate>
         @if (modo() === 'registro') {
           <div class="campo">
             <label for="nombre">Nombre</label>
             <input
               id="nombre"
+              name="stockly-nombre"
               class="input"
               type="text"
               formControlName="nombre"
               placeholder="Tu nombre"
-              autocomplete="name"
+              autocomplete="off"
+              [readonly]="camposBloqueados()"
+              (focus)="desbloquearCampos()"
               [class.invalido]="campoInvalido('nombre')"
             />
             @if (campoInvalido('nombre')) {
@@ -77,11 +81,14 @@
           <label for="correo">Correo</label>
           <input
             id="correo"
+            name="stockly-correo"
             class="input"
             type="email"
             formControlName="correo"
             placeholder="tucorreo@gmail.com"
-            autocomplete="email"
+            autocomplete="off"
+            [readonly]="camposBloqueados()"
+            (focus)="desbloquearCampos()"
             [class.invalido]="campoInvalido('correo')"
           />
           @if (campoInvalido('correo')) {
@@ -94,11 +101,14 @@
           <div class="input-password">
             <input
               id="password"
+              name="stockly-clave"
               class="input"
               [type]="verPassword() ? 'text' : 'password'"
               formControlName="password"
               placeholder="••••••••"
-              [attr.autocomplete]="modo() === 'registro' ? 'new-password' : 'current-password'"
+              autocomplete="new-password"
+              [readonly]="camposBloqueados()"
+              (focus)="desbloquearCampos()"
               [class.invalido]="campoInvalido('password')"
             />
             <button

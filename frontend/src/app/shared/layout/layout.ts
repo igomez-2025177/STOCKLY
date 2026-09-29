@@ -1,6 +1,7 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
+import { InactividadService } from '../../core/services/inactividad.service';
 
 interface SeccionMenu {
   titulo: string;
@@ -23,6 +24,10 @@ const MENU: SeccionMenu[] = [
       { texto: 'Proveedores', ruta: '/proveedores' },
     ],
   },
+  {
+    titulo: 'Cuenta',
+    links: [{ texto: 'Mi cuenta', ruta: '/cuenta' }],
+  },
 ];
 
 @Component({
@@ -31,8 +36,9 @@ const MENU: SeccionMenu[] = [
   templateUrl: './layout.html',
   styleUrl: './layout.css',
 })
-export class Layout implements OnInit {
+export class Layout implements OnInit, OnDestroy {
   readonly auth = inject(AuthService);
+  readonly inactividad = inject(InactividadService);
   readonly menuAbierto = signal(false);
   readonly menu = MENU;
 
@@ -48,6 +54,12 @@ export class Layout implements OnInit {
 
   ngOnInit(): void {
     this.auth.refrescarUsuario().subscribe({ error: () => {} });
+
+    this.inactividad.iniciar();
+  }
+
+  ngOnDestroy(): void {
+    this.inactividad.detener();
   }
 
   cerrarMenu(): void {
@@ -55,6 +67,7 @@ export class Layout implements OnInit {
   }
 
   cerrarSesion(): void {
+    this.inactividad.detener();
     this.auth.logout();
   }
 }
