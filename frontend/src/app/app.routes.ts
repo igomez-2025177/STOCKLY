@@ -33,6 +33,10 @@ export const routes: Routes = [
         path: 'proveedores',
         loadComponent: () => import('./pages/proveedores/proveedores').then((m) => m.Proveedores),
       },
+      {
+        path: 'cuenta',
+        loadComponent: () => import('./pages/cuenta/cuenta').then((m) => m.Cuenta),
+      },
       { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
     ],
   },

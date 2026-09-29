@@ -3,7 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { Observable, tap } from 'rxjs';
 import { API_URL } from '../config';
-import { AuthResponse, Usuario } from '../models/usuario.model';
+import { AuthResponse, PerfilUsuario, Usuario } from '../models/usuario.model';
 
 const TOKEN_KEY = 'stockly_token';
 const USUARIO_KEY = 'stockly_usuario';
@@ -44,13 +44,27 @@ export class AuthService {
       .pipe(tap((res) => this.guardarSesion(res)));
   }
 
-  refrescarUsuario(): Observable<{ user: Usuario }> {
-    return this.http.get<{ user: Usuario }>(`${API_URL}/auth/me`).pipe(
-      tap(({ user }) => {
-        this._usuario.set(user);
-        this.guardarEnStorage(USUARIO_KEY, JSON.stringify(user));
-      })
+  refrescarUsuario(): Observable<{ user: PerfilUsuario }> {
+    return this.obtenerPerfil();
+  }
+
+  obtenerPerfil(): Observable<{ user: PerfilUsuario }> {
+    return this.http.get<{ user: PerfilUsuario }>(`${API_URL}/auth/me`).pipe(
+      tap(({ user }) => this.actualizarUsuarioLocal(user))
     );
+  }
+
+  actualizarNombre(nombre: string): Observable<{ message: string; user: Usuario }> {
+    return this.http
+      .patch<{ message: string; user: Usuario }>(`${API_URL}/auth/perfil`, { nombre })
+      .pipe(tap(({ user }) => this.actualizarUsuarioLocal(user)));
+  }
+
+  cambiarPassword(passwordActual: string | null, passwordNuevo: string): Observable<{ message: string }> {
+    return this.http.patch<{ message: string }>(`${API_URL}/auth/password`, {
+      ...(passwordActual ? { passwordActual } : {}),
+      passwordNuevo,
+    });
   }
 
   logout(mensaje?: string): void {
@@ -63,6 +77,12 @@ export class AuthService {
     }
 
     this.router.navigate(['/login']);
+  }
+
+  private actualizarUsuarioLocal(user: Usuario): void {
+    const basico: Usuario = { id: user.id, nombre: user.nombre, correo: user.correo };
+    this._usuario.set(basico);
+    this.guardarEnStorage(USUARIO_KEY, JSON.stringify(basico));
   }
 
   private guardarSesion(res: AuthResponse): void {

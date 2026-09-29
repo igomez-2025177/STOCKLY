@@ -8,6 +8,7 @@ import { ALLOWED_EMAIL_DOMAINS, MIN_PASSWORD, isEmailDomainAllowed, limpiarCorre
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
+const MAX_NOMBRE = 80;
 
 function datosUsuario(user: { id: number; nombre: string; correo: string }) {
   return { id: user.id, nombre: user.nombre, correo: user.correo };
@@ -47,7 +48,7 @@ export async function register(req: Request, res: Response) {
 
     const user = await prisma.usuario.create({
       data: {
-        nombre: String(nombre).trim(),
+        nombre: String(nombre).trim().slice(0, MAX_NOMBRE),
         correo: correoLimpio,
         password: await hashPassword(password),
       },
@@ -157,7 +158,7 @@ export async function googleLogin(req: Request, res: Response) {
 
       user = await prisma.usuario.create({
         data: {
-          nombre: payload.name?.trim() || correo.split("@")[0],
+          nombre: (payload.name?.trim() || correo.split("@")[0]).slice(0, MAX_NOMBRE),
           correo,
           googleId,
         },
@@ -183,16 +184,49 @@ export async function me(req: AuthRequest, res: Response) {
 
     const user = await prisma.usuario.findUnique({
       where: { id: userId },
-      select: { id: true, nombre: true, correo: true },
+      select: { id: true, nombre: true, correo: true, password: true, googleId: true },
     });
 
     if (!user) {
       return res.status(404).json({ error: "Usuario no encontrado" });
     }
 
-    return res.status(200).json({ user });
+    return res.status(200).json({
+      user: {
+        ...datosUsuario(user),
+        tienePassword: !!user.password,
+        conGoogle: !!user.googleId,
+      },
+    });
   } catch (error) {
     console.error("Error en me:", error);
+    return res.status(500).json({ error: "Error interno del servidor" });
+  }
+}
+
+export async function actualizarPerfil(req: AuthRequest, res: Response) {
+  try {
+    const nombre = String(req.body.nombre ?? "").trim();
+
+    if (!nombre) {
+      return res.status(400).json({ error: "El nombre es obligatorio" });
+    }
+
+    if (nombre.length > MAX_NOMBRE) {
+      return res.status(400).json({ error: `El nombre puede tener máximo ${MAX_NOMBRE} caracteres` });
+    }
+
+    const user = await prisma.usuario.update({
+      where: { id: req.user!.userId },
+      data: { nombre },
+    });
+
+    return res.status(200).json({
+      message: "Nombre actualizado correctamente",
+      user: datosUsuario(user),
+    });
+  } catch (error) {
+    console.error("Error en actualizarPerfil:", error);
     return res.status(500).json({ error: "Error interno del servidor" });
   }
 }
@@ -219,7 +253,7 @@ export async function cambiarMiPassword(req: AuthRequest, res: Response) {
 
     if (user.password) {
       if (!passwordActual) {
-        return res.status(400).json({ error: "Falta el campo passwordActual" });
+        return res.status(400).json({ error: "Escribe tu contraseña actual" });
       }
 
       const coincide = await comparePassword(passwordActual, user.password);
@@ -239,7 +273,9 @@ export async function cambiarMiPassword(req: AuthRequest, res: Response) {
     });
 
     return res.status(200).json({
-      message: user.password ? "Contraseña actualizada correctamente" : "Contraseña creada, ahora también puedes entrar con tu correo",
+      message: user.password
+        ? "Contraseña actualizada correctamente"
+        : "Contraseña creada, ahora también puedes entrar con tu correo",
     });
   } catch (error) {
     console.error("Error en cambiarMiPassword:", error);

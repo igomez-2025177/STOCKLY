@@ -1,4 +1,4 @@
-import { Component, HostListener, input, output } from '@angular/core';
+import { Component, input, output, signal } from '@angular/core';
 
 @Component({
   selector: 'app-modal',
@@ -8,13 +8,21 @@ import { Component, HostListener, input, output } from '@angular/core';
 export class Modal {
   readonly titulo = input.required<string>();
   readonly abierto = input(false);
+
   readonly tamano = input<'normal' | 'grande'>('normal');
   readonly cerrar = output<void>();
 
-  @HostListener('document:keydown.escape')
-  alPresionarEscape(): void {
-    if (this.abierto()) {
-      this.cerrar.emit();
-    }
+  readonly rebotando = signal(false);
+
+  private timerRebote?: ReturnType<typeof setTimeout>;
+
+  alClicAfuera(): void {
+    this.rebotando.set(false);
+    clearTimeout(this.timerRebote);
+
+    requestAnimationFrame(() => {
+      this.rebotando.set(true);
+      this.timerRebote = setTimeout(() => this.rebotando.set(false), 300);
+    });
   }
 }

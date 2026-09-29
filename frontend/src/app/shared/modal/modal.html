@@ -1,8 +1,9 @@
 @if (abierto()) {
-  <div class="modal-fondo" (click)="cerrar.emit()">
+  <div class="modal-fondo" (click)="alClicAfuera()">
     <div
       class="modal"
       [class.modal-grande]="tamano() === 'grande'"
+      [class.rebote]="rebotando()"
       role="dialog"
       aria-modal="true"
       [attr.aria-label]="titulo()"
@@ -10,7 +11,9 @@
     >
       <header class="modal-encabezado">
         <h3>{{ titulo() }}</h3>
-        <button type="button" class="btn btn-fantasma btn-sm" (click)="cerrar.emit()" aria-label="Cerrar">✕</button>
+        <button type="button" class="modal-cerrar" (click)="cerrar.emit()" aria-label="Cerrar" title="Cerrar">
+          ✕
+        </button>
       </header>
 
       <div class="modal-cuerpo">

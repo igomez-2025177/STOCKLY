@@ -2,19 +2,14 @@ import { Response } from "express";
 import { prisma } from "../config/prisma";
 import { AuthRequest } from "../middlewares/auth.middleware";
 
-const UNIDADES = ["UNIDAD", "CAJA", "PAQUETE", "BOLSA", "DOCENA", "LIBRA", "LITRO", "METRO"] as const;
-type Unidad = (typeof UNIDADES)[number];
-
 const INCLUDE_PRODUCTO = {
   categoria: { select: { id: true, nombre: true, activo: true } },
   proveedor: { select: { id: true, nombre: true, activo: true } },
 };
 
 interface DatosProducto {
-  sku: string;
   nombre: string;
   descripcion: string | null;
-  unidad: Unidad;
   ubicacion: string | null;
   precioCompra: number;
   precioVenta: number;
@@ -50,16 +45,19 @@ function parseEnteroNoNegativo(value: unknown): number | null {
   return Number.isInteger(numero) && numero >= 0 ? numero : null;
 }
 
+function vieneValor(value: unknown): boolean {
+  return value !== undefined && value !== null && value !== "";
+}
+
 function conStockBajo<T extends { stockActual: number; stockMinimo: number }>(producto: T) {
   return { ...producto, stockBajo: producto.stockActual <= producto.stockMinimo };
 }
 
-async function validarProducto(body: any, excluirId?: number): Promise<ResultadoValidacion> {
-  const sku = textoOpcional(body.sku)?.toUpperCase() ?? null;
+async function validarProducto(body: any, usuarioId: number, excluirId?: number): Promise<ResultadoValidacion> {
   const nombre = textoOpcional(body.nombre);
 
-  if (!sku || !nombre) {
-    return { ok: false, status: 400, error: "El SKU y el nombre son obligatorios" };
+  if (!nombre) {
+    return { ok: false, status: 400, error: "El nombre es obligatorio" };
   }
 
   const precioVenta = parseDinero(body.precioVenta);
@@ -70,7 +68,7 @@ async function validarProducto(body: any, excluirId?: number): Promise<Resultado
 
   let precioCompra = 0;
 
-  if (body.precioCompra !== undefined && body.precioCompra !== null && body.precioCompra !== "") {
+  if (vieneValor(body.precioCompra)) {
     const valor = parseDinero(body.precioCompra);
 
     if (valor === null) {
@@ -82,7 +80,7 @@ async function validarProducto(body: any, excluirId?: number): Promise<Resultado
 
   let stockMinimo = 0;
 
-  if (body.stockMinimo !== undefined && body.stockMinimo !== null && body.stockMinimo !== "") {
+  if (vieneValor(body.stockMinimo)) {
     const valor = parseEnteroNoNegativo(body.stockMinimo);
 
     if (valor === null) {
@@ -92,25 +90,13 @@ async function validarProducto(body: any, excluirId?: number): Promise<Resultado
     stockMinimo = valor;
   }
 
-  let unidad: Unidad = "UNIDAD";
-
-  if (body.unidad) {
-    const valor = String(body.unidad).toUpperCase();
-
-    if (!UNIDADES.includes(valor as Unidad)) {
-      return { ok: false, status: 400, error: `Unidad no válida. Usa: ${UNIDADES.join(", ")}` };
-    }
-
-    unidad = valor as Unidad;
-  }
-
   const categoriaId = parseId(body.categoriaId);
 
   if (!categoriaId) {
     return { ok: false, status: 400, error: "La categoría es obligatoria" };
   }
 
-  const categoria = await prisma.categoria.findUnique({ where: { id: categoriaId } });
+  const categoria = await prisma.categoria.findFirst({ where: { id: categoriaId, usuarioId } });
 
   if (!categoria) {
     return { ok: false, status: 404, error: "La categoría no existe" };
@@ -122,14 +108,14 @@ async function validarProducto(body: any, excluirId?: number): Promise<Resultado
 
   let proveedorId: number | null = null;
 
-  if (body.proveedorId !== undefined && body.proveedorId !== null && body.proveedorId !== "") {
+  if (vieneValor(body.proveedorId)) {
     proveedorId = parseId(body.proveedorId);
 
     if (!proveedorId) {
       return { ok: false, status: 400, error: "Id de proveedor inválido" };
     }
 
-    const proveedor = await prisma.proveedor.findUnique({ where: { id: proveedorId } });
+    const proveedor = await prisma.proveedor.findFirst({ where: { id: proveedorId, usuarioId } });
 
     if (!proveedor) {
       return { ok: false, status: 404, error: "El proveedor no existe" };
@@ -142,7 +128,8 @@ async function validarProducto(body: any, excluirId?: number): Promise<Resultado
 
   const repetido = await prisma.producto.findFirst({
     where: {
-      sku: { equals: sku, mode: "insensitive" },
+      usuarioId,
+      nombre: { equals: nombre, mode: "insensitive" },
       ...(excluirId ? { NOT: { id: excluirId } } : {}),
     },
   });
@@ -152,21 +139,19 @@ async function validarProducto(body: any, excluirId?: number): Promise<Resultado
       return {
         ok: false,
         status: 409,
-        error: `El SKU "${repetido.sku}" ya existe en un producto desactivado (${repetido.nombre}). Reactívalo en lugar de crear otro`,
+        error: `Ya tienes un producto desactivado llamado "${repetido.nombre}". Reactívalo en lugar de crear otro`,
         productoId: repetido.id,
       };
     }
 
-    return { ok: false, status: 409, error: `El SKU "${repetido.sku}" ya lo usa el producto "${repetido.nombre}"` };
+    return { ok: false, status: 409, error: `Ya tienes un producto llamado "${repetido.nombre}"` };
   }
 
   return {
     ok: true,
     datos: {
-      sku,
       nombre,
       descripcion: textoOpcional(body.descripcion),
-      unidad,
       ubicacion: textoOpcional(body.ubicacion),
       precioCompra,
       precioVenta,
@@ -186,6 +171,7 @@ function advertenciaPrecio(datos: DatosProducto): string | undefined {
 
 export async function listarProductos(req: AuthRequest, res: Response) {
   try {
+    const usuarioId = req.user!.userId;
     const q = textoOpcional(req.query.q);
     const categoriaId = parseId(req.query.categoriaId);
     const proveedorId = parseId(req.query.proveedorId);
@@ -194,18 +180,12 @@ export async function listarProductos(req: AuthRequest, res: Response) {
 
     const productos = await prisma.producto.findMany({
       where: {
+        usuarioId,
         ...(todos ? {} : { activo: true }),
         ...(categoriaId ? { categoriaId } : {}),
         ...(proveedorId ? { proveedorId } : {}),
         ...(stockBajo ? { stockActual: { lte: prisma.producto.fields.stockMinimo } } : {}),
-        ...(q
-          ? {
-              OR: [
-                { nombre: { contains: q, mode: "insensitive" as const } },
-                { sku: { contains: q, mode: "insensitive" as const } },
-              ],
-            }
-          : {}),
+        ...(q ? { nombre: { contains: q, mode: "insensitive" as const } } : {}),
       },
       include: INCLUDE_PRODUCTO,
       orderBy: { nombre: "asc" },
@@ -220,14 +200,15 @@ export async function listarProductos(req: AuthRequest, res: Response) {
 
 export async function obtenerProducto(req: AuthRequest, res: Response) {
   try {
+    const usuarioId = req.user!.userId;
     const id = parseId(req.params.id);
 
     if (!id) {
       return res.status(400).json({ error: "Id inválido" });
     }
 
-    const producto = await prisma.producto.findUnique({
-      where: { id },
+    const producto = await prisma.producto.findFirst({
+      where: { id, usuarioId },
       include: { ...INCLUDE_PRODUCTO, _count: { select: { movimientos: true } } },
     });
 
@@ -244,7 +225,8 @@ export async function obtenerProducto(req: AuthRequest, res: Response) {
 
 export async function crearProducto(req: AuthRequest, res: Response) {
   try {
-    const validacion = await validarProducto(req.body);
+    const usuarioId = req.user!.userId;
+    const validacion = await validarProducto(req.body, usuarioId);
 
     if (!validacion.ok) {
       return res.status(validacion.status).json({
@@ -257,7 +239,7 @@ export async function crearProducto(req: AuthRequest, res: Response) {
 
     let stockInicial = 0;
 
-    if (req.body.stockInicial !== undefined && req.body.stockInicial !== null && req.body.stockInicial !== "") {
+    if (vieneValor(req.body.stockInicial)) {
       const valor = parseEnteroNoNegativo(req.body.stockInicial);
 
       if (valor === null) {
@@ -267,11 +249,9 @@ export async function crearProducto(req: AuthRequest, res: Response) {
       stockInicial = valor;
     }
 
-    const usuarioId = req.user!.userId;
-
     const producto = await prisma.$transaction(async (tx) => {
       const nuevo = await tx.producto.create({
-        data: { ...datos, stockActual: stockInicial },
+        data: { ...datos, usuarioId, stockActual: stockInicial },
       });
 
       if (stockInicial > 0) {
@@ -308,19 +288,20 @@ export async function crearProducto(req: AuthRequest, res: Response) {
 
 export async function actualizarProducto(req: AuthRequest, res: Response) {
   try {
+    const usuarioId = req.user!.userId;
     const id = parseId(req.params.id);
 
     if (!id) {
       return res.status(400).json({ error: "Id inválido" });
     }
 
-    const existente = await prisma.producto.findUnique({ where: { id } });
+    const existente = await prisma.producto.findFirst({ where: { id, usuarioId } });
 
     if (!existente) {
       return res.status(404).json({ error: "Producto no encontrado" });
     }
 
-    const validacion = await validarProducto(req.body, id);
+    const validacion = await validarProducto(req.body, usuarioId, id);
 
     if (!validacion.ok) {
       return res.status(validacion.status).json({ error: validacion.error });
@@ -347,6 +328,7 @@ export async function actualizarProducto(req: AuthRequest, res: Response) {
 
 export async function cambiarEstadoProducto(req: AuthRequest, res: Response) {
   try {
+    const usuarioId = req.user!.userId;
     const id = parseId(req.params.id);
 
     if (!id) {
@@ -359,8 +341,8 @@ export async function cambiarEstadoProducto(req: AuthRequest, res: Response) {
       return res.status(400).json({ error: "El campo activo debe ser true o false" });
     }
 
-    const producto = await prisma.producto.findUnique({
-      where: { id },
+    const producto = await prisma.producto.findFirst({
+      where: { id, usuarioId },
       include: INCLUDE_PRODUCTO,
     });
 
@@ -400,14 +382,15 @@ export async function cambiarEstadoProducto(req: AuthRequest, res: Response) {
 
 export async function eliminarProducto(req: AuthRequest, res: Response) {
   try {
+    const usuarioId = req.user!.userId;
     const id = parseId(req.params.id);
 
     if (!id) {
       return res.status(400).json({ error: "Id inválido" });
     }
 
-    const producto = await prisma.producto.findUnique({
-      where: { id },
+    const producto = await prisma.producto.findFirst({
+      where: { id, usuarioId },
       include: { _count: { select: { movimientos: true } } },
     });
 
