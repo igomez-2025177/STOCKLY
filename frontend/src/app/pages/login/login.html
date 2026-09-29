@@ -33,7 +33,7 @@
         <p class="texto-suave">Regístrate para empezar a controlar tu inventario.</p>
       } @else {
         <h2>Iniciar sesión</h2>
-        <p class="texto-suave">Ingresa con tu correo y contraseña.</p>
+        <p class="texto-suave">Entra con Google o con tu correo y contraseña.</p>
       }
 
       @if (aviso()) {
@@ -43,6 +43,16 @@
       @if (error()) {
         <div class="aviso aviso-peligro">{{ error() }}</div>
       }
+
+      <!-- boton de google, siempre esta en el html pa que google lo pueda dibujar -->
+      <div class="google-contenedor" [class.google-cargando]="cargando()">
+        <div #botonGoogle class="google-boton"></div>
+        @if (googleNoDisponible()) {
+          <small class="texto-tenue">No se pudo cargar el botón de Google. Revisa tu conexión.</small>
+        }
+      </div>
+
+      <div class="separador"><span>o con tu correo</span></div>
 
       <form [formGroup]="form" (ngSubmit)="enviar()" novalidate>
         @if (modo() === 'registro') {

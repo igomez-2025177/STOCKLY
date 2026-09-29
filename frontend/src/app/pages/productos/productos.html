@@ -1,0 +1,291 @@
+<div class="pagina-encabezado">
+  <div>
+    <h1>Productos</h1>
+    <p>Todo lo que tienes en bodega, con su stock y precios.</p>
+  </div>
+  <button type="button" class="btn btn-primario" (click)="abrirNuevo()" [disabled]="categorias().length === 0">
+    + Nuevo producto
+  </button>
+</div>
+
+@if (mensaje()) {
+  <div class="aviso aviso-exito">{{ mensaje() }}</div>
+}
+
+@if (advertencia()) {
+  <div class="aviso aviso-alerta">{{ advertencia() }}</div>
+}
+
+@if (error()) {
+  <div class="aviso aviso-peligro">{{ error() }}</div>
+}
+
+@if (!cargando() && categorias().length === 0) {
+  <div class="aviso aviso-info">
+    <span>
+      Para registrar productos primero necesitas al menos una categoría.
+      <a routerLink="/categorias">Crear categoría</a>
+    </span>
+  </div>
+}
+
+<!-- filtros -->
+<div class="filtros">
+  <input
+    type="search"
+    class="input buscador"
+    placeholder="Buscar producto..."
+    [value]="busqueda()"
+    (input)="busqueda.set($any($event.target).value)"
+  />
+
+  <select class="select filtro-select" [value]="filtroCategoria() ?? ''" (change)="cambiarFiltroCategoria($any($event.target).value)">
+    <option value="">Todas las categorías</option>
+    @for (c of categorias(); track c.id) {
+      <option [value]="c.id">{{ c.nombre }}</option>
+    }
+  </select>
+
+  <select class="select filtro-select" [value]="filtroProveedor() ?? ''" (change)="cambiarFiltroProveedor($any($event.target).value)">
+    <option value="">Todos los proveedores</option>
+    @for (p of proveedores(); track p.id) {
+      <option [value]="p.id">{{ p.nombre }}</option>
+    }
+  </select>
+
+  <label class="check">
+    <input type="checkbox" [checked]="soloStockBajo()" (change)="cambiarSoloStockBajo($any($event.target).checked)" />
+    Solo stock bajo
+  </label>
+
+  <label class="check">
+    <input type="checkbox" [checked]="verTodos()" (change)="cambiarVerTodos($any($event.target).checked)" />
+    Ver desactivados
+  </label>
+
+  @if (hayFiltros()) {
+    <button type="button" class="btn btn-fantasma btn-sm" (click)="limpiarFiltros()">Limpiar filtros</button>
+  }
+</div>
+
+@if (cargando()) {
+  <p class="texto-suave">Cargando productos...</p>
+} @else if (productos().length === 0 && !hayFiltros()) {
+  <div class="tarjeta vacio">
+    <strong>Todavía no hay productos.</strong><br />
+    Registra el primero con el botón "Nuevo producto".
+  </div>
+} @else if (filtrados().length === 0) {
+  <div class="tarjeta vacio">No hay productos con esos filtros.</div>
+} @else {
+  <p class="texto-tenue conteo">{{ filtrados().length }} producto(s)</p>
+
+  <div class="tabla-contenedor">
+    <table class="tabla">
+      <thead>
+        <tr>
+          <th>Producto</th>
+          <th class="derecha">Stock</th>
+          <th class="derecha">Precio venta</th>
+          <th>Proveedor</th>
+          <th>Estado</th>
+          <th class="derecha">Acciones</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (p of filtrados(); track p.id) {
+          <tr [class.fila-apagada]="!p.activo">
+            <td>
+              <span class="negrita">{{ p.nombre }}</span><br />
+              <span class="texto-tenue">
+                {{ p.categoria.nombre }}
+                @if (p.ubicacion) {
+                  · {{ p.ubicacion }}
+                }
+              </span>
+            </td>
+            <td class="derecha">
+              <span
+                class="badge"
+                [class.badge-peligro]="p.stockActual === 0"
+                [class.badge-alerta]="p.stockBajo && p.stockActual > 0"
+                [class.badge-exito]="!p.stockBajo"
+              >
+                {{ p.stockActual }} {{ textoUnidades(p.stockActual) }}
+              </span>
+              <br /><span class="texto-tenue minimo">mín. {{ p.stockMinimo }}</span>
+            </td>
+            <td class="derecha negrita">{{ p.precioVenta | currency: 'GTQ' : 'symbol-narrow' }}</td>
+            <td>
+              @if (p.proveedor) {
+                {{ p.proveedor.nombre }}
+              } @else {
+                <span class="texto-tenue">—</span>
+              }
+            </td>
+            <td>
+              @if (p.activo) {
+                <span class="badge badge-exito">Activo</span>
+              } @else {
+                <span class="badge badge-neutro">Desactivado</span>
+              }
+            </td>
+            <td>
+              <div class="acciones">
+                <button type="button" class="btn btn-secundario btn-sm" (click)="abrirEditar(p)">Editar</button>
+                <button type="button" class="btn btn-secundario btn-sm" (click)="cambiarEstado(p)">
+                  {{ p.activo ? 'Desactivar' : 'Reactivar' }}
+                </button>
+                <button type="button" class="btn btn-peligro btn-sm" (click)="eliminar(p)">Eliminar</button>
+              </div>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+}
+
+<!-- formulario de crear / editar -->
+<app-modal
+  [titulo]="editando() ? 'Editar producto' : 'Nuevo producto'"
+  [abierto]="modalAbierto()"
+  tamano="grande"
+  (cerrar)="cerrarModal()"
+>
+  @if (errorForm()) {
+    <div class="aviso aviso-peligro aviso-con-accion">
+      <span>{{ errorForm() }}</span>
+      @if (reactivarId()) {
+        <button type="button" class="btn btn-acento btn-sm" (click)="reactivarDesdeAviso()" [disabled]="guardando()">
+          Reactivarlo
+        </button>
+      }
+    </div>
+  }
+
+  <form [formGroup]="form" (ngSubmit)="guardar()" novalidate>
+    <!-- datos -->
+    <h4 class="seccion-form">Datos</h4>
+
+    <div class="campo">
+      <label for="nombre">Nombre *</label>
+      <input id="nombre" class="input" type="text" formControlName="nombre" placeholder="Coca-Cola 600ml" [class.invalido]="campoInvalido('nombre')" />
+      <span class="ayuda-campo">Incluye la presentación si hace falta, ej. "Aceite 1 litro" o "Huevos (cartón de 30)"</span>
+      @if (campoInvalido('nombre')) {
+        <span class="error-campo">El nombre es obligatorio</span>
+      }
+    </div>
+
+    <div class="fila-campos">
+      <div class="campo">
+        <label for="categoriaId">Categoría *</label>
+        <select id="categoriaId" class="select" formControlName="categoriaId" [class.invalido]="campoInvalido('categoriaId')">
+          <option value="">Escoge una...</option>
+          @for (c of categorias(); track c.id) {
+            <option [value]="c.id">{{ c.nombre }}</option>
+          }
+        </select>
+        @if (campoInvalido('categoriaId')) {
+          <span class="error-campo">Escoge una categoría</span>
+        }
+      </div>
+
+      <div class="campo">
+        <label for="proveedorId">Proveedor</label>
+        <select id="proveedorId" class="select" formControlName="proveedorId">
+          <option value="">Sin proveedor fijo</option>
+          @for (p of proveedores(); track p.id) {
+            <option [value]="p.id">{{ p.nombre }}</option>
+          }
+        </select>
+      </div>
+    </div>
+
+    <div class="fila-campos">
+      <div class="campo">
+        <label for="ubicacion">Ubicación en bodega</label>
+        <input id="ubicacion" class="input" type="text" formControlName="ubicacion" placeholder="Estante 3, fila B" />
+      </div>
+
+      <div class="campo">
+        <label for="descripcion">Descripción</label>
+        <input id="descripcion" class="input" type="text" formControlName="descripcion" placeholder="Opcional" />
+      </div>
+    </div>
+
+    <!-- precios -->
+    <h4 class="seccion-form">Precios</h4>
+
+    <div class="fila-campos">
+      <div class="campo">
+        <label for="precioCompra">Precio de compra (Q)</label>
+        <input id="precioCompra" class="input" type="number" min="0" step="0.01" formControlName="precioCompra" [class.invalido]="campoInvalido('precioCompra')" />
+        <span class="ayuda-campo">Lo que te cuesta a ti</span>
+        @if (campoInvalido('precioCompra')) {
+          <span class="error-campo">No puede ser negativo</span>
+        }
+      </div>
+
+      <div class="campo">
+        <label for="precioVenta">Precio de venta (Q) *</label>
+        <input id="precioVenta" class="input" type="number" min="0" step="0.01" formControlName="precioVenta" [class.invalido]="campoInvalido('precioVenta')" />
+        <span class="ayuda-campo">Lo que le cobras al cliente</span>
+        @if (campoInvalido('precioVenta')) {
+          <span class="error-campo">Obligatorio y no negativo</span>
+        }
+      </div>
+    </div>
+
+    @if (margen(); as m) {
+      <div class="margen" [class.margen-malo]="m.pierde">
+        Ganas por cada uno que vendes:
+        <strong>{{ m.ganancia | currency: 'GTQ' : 'symbol-narrow' }}</strong>
+        @if (m.porcentaje !== null) {
+          ({{ m.porcentaje.toFixed(0) }}%)
+        }
+        @if (m.pierde) {
+          · vas a perder dinero
+        }
+      </div>
+    }
+
+    <!-- inventario -->
+    <h4 class="seccion-form">Inventario</h4>
+
+    <div class="fila-campos">
+      <div class="campo">
+        <label for="stockMinimo">Avisarme cuando queden *</label>
+        <input id="stockMinimo" class="input" type="number" min="0" step="1" formControlName="stockMinimo" [class.invalido]="campoInvalido('stockMinimo')" />
+        <span class="ayuda-campo">Cuando llegue a esta cantidad, te sale la alerta de stock bajo</span>
+        @if (campoInvalido('stockMinimo')) {
+          <span class="error-campo">Número entero de 0 en adelante</span>
+        }
+      </div>
+
+      @if (!editando()) {
+        <div class="campo">
+          <label for="stockInicial">¿Cuántos tienes hoy?</label>
+          <input id="stockInicial" class="input" type="number" min="0" step="1" formControlName="stockInicial" [class.invalido]="campoInvalido('stockInicial')" />
+          <span class="ayuda-campo">Lo que ya hay en el estante al registrarlo</span>
+          @if (campoInvalido('stockInicial')) {
+            <span class="error-campo">Número entero de 0 en adelante</span>
+          }
+        </div>
+      }
+    </div>
+
+    @if (editando(); as p) {
+      <div class="aviso aviso-info">
+        Hay {{ p.stockActual }} {{ textoUnidades(p.stockActual) }}. La cantidad no se edita aquí, solo cambia con entradas y salidas en Movimientos.
+      </div>
+    }
+
+    <div class="modal-botones">
+      <button type="button" class="btn btn-secundario" (click)="cerrarModal()" [disabled]="guardando()">Cancelar</button>
+      <button type="submit" class="btn btn-primario" [disabled]="guardando()">
+        {{ guardando() ? 'Guardando...' : editando() ? 'Guardar cambios' : 'Crear producto' }}
+      </button>
+    </div>
+  </form>
+</app-modal>

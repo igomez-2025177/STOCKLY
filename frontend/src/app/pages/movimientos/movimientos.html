@@ -1,0 +1,288 @@
+<div class="pagina-encabezado">
+  <div>
+    <h1>Movimientos</h1>
+    <p>Todo lo que entra y sale de tu bodega. El stock cambia solo con cada movimiento.</p>
+  </div>
+  <div class="botones-encabezado">
+    <button type="button" class="btn btn-secundario" (click)="abrirNuevo('ENTRADA')">+ Entrada</button>
+    <button type="button" class="btn btn-primario" (click)="abrirNuevo('SALIDA')">− Salida</button>
+  </div>
+</div>
+
+@if (mensaje()) {
+  <div class="aviso aviso-exito">{{ mensaje() }}</div>
+}
+
+@if (alerta()) {
+  <div class="aviso aviso-alerta">⚠ {{ alerta() }}</div>
+}
+
+@if (error()) {
+  <div class="aviso aviso-peligro">{{ error() }}</div>
+}
+
+<!-- filtros -->
+<div class="filtros">
+  <select class="select filtro-select" [value]="fProducto() ?? ''" (change)="fProducto.set(+$any($event.target).value || null); aplicarFiltros()">
+    <option value="">Todos los productos</option>
+    @for (p of productos(); track p.id) {
+      <option [value]="p.id">{{ p.nombre }}</option>
+    }
+  </select>
+
+  <select class="select filtro-select" [value]="fTipo()" (change)="fTipo.set($any($event.target).value); aplicarFiltros()">
+    <option value="">Entradas y salidas</option>
+    <option value="ENTRADA">Solo entradas</option>
+    <option value="SALIDA">Solo salidas</option>
+  </select>
+
+  <select class="select filtro-select" [value]="fMotivo()" (change)="fMotivo.set($any($event.target).value); aplicarFiltros()">
+    <option value="">Todos los motivos</option>
+    @for (m of todosLosMotivos; track m) {
+      <option [value]="m">{{ motivoTexto[m] }}</option>
+    }
+  </select>
+
+  <label class="filtro-fecha">
+    Desde
+    <input type="date" class="input" [value]="fDesde()" (change)="fDesde.set($any($event.target).value); aplicarFiltros()" />
+  </label>
+
+  <label class="filtro-fecha">
+    Hasta
+    <input type="date" class="input" [value]="fHasta()" (change)="fHasta.set($any($event.target).value); aplicarFiltros()" />
+  </label>
+
+  @if (hayFiltros()) {
+    <button type="button" class="btn btn-fantasma btn-sm" (click)="limpiarFiltros()">Limpiar filtros</button>
+  }
+</div>
+
+<!-- historial -->
+@if (cargando()) {
+  <p class="texto-suave">Cargando movimientos...</p>
+} @else if (movimientos().length === 0) {
+  <div class="tarjeta vacio">
+    @if (hayFiltros()) {
+      No hay movimientos con esos filtros.
+    } @else {
+      <strong>Todavía no hay movimientos.</strong><br />
+      Registra una entrada cuando llegue mercadería o una salida cuando vendas.
+    }
+  </div>
+} @else {
+  <div class="tabla-contenedor">
+    <table class="tabla">
+      <thead>
+        <tr>
+          <th>Fecha</th>
+          <th>Producto</th>
+          <th>Movimiento</th>
+          <th class="derecha">Cantidad</th>
+          <th class="derecha">Quedaron</th>
+          <th class="derecha">Precio c/u</th>
+          <th>Detalle</th>
+          <th>Usuario</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (m of movimientos(); track m.id) {
+          <tr>
+            <td class="texto-suave fecha">
+              {{ m.fecha | date: 'd MMM y' }}<br />
+              <span class="texto-tenue">{{ m.fecha | date: 'h:mm a' }}</span>
+            </td>
+            <td class="negrita">{{ m.producto.nombre }}</td>
+            <td>
+              <span
+                class="badge"
+                [class.badge-exito]="m.tipo === 'ENTRADA' && m.motivo !== 'AJUSTE'"
+                [class.badge-peligro]="m.motivo === 'PERDIDA'"
+                [class.badge-info]="m.motivo === 'AJUSTE'"
+                [class.badge-neutro]="m.tipo === 'SALIDA' && m.motivo !== 'PERDIDA' && m.motivo !== 'AJUSTE'"
+              >
+                {{ m.tipo === 'ENTRADA' ? 'Entrada' : 'Salida' }} · {{ motivoTexto[m.motivo] }}
+              </span>
+            </td>
+            <td class="derecha negrita" [class.texto-exito]="m.tipo === 'ENTRADA'">
+              {{ m.tipo === 'ENTRADA' ? '+' : '−' }}{{ m.cantidad }}
+            </td>
+            <td class="derecha">{{ m.stockResultante }}</td>
+            <td class="derecha">
+              @if (m.precioUnitario !== null) {
+                {{ m.precioUnitario | currency: 'GTQ' : 'symbol-narrow' }}
+              } @else {
+                <span class="texto-tenue">—</span>
+              }
+            </td>
+            <td class="detalle">
+              @if (m.proveedor) {
+                <span>{{ m.proveedor.nombre }}</span>
+              }
+              @if (m.nota) {
+                <span class="texto-suave nota">{{ m.nota }}</span>
+              }
+              @if (!m.proveedor && !m.nota) {
+                <span class="texto-tenue">—</span>
+              }
+            </td>
+            <td class="texto-suave">{{ m.usuario.nombre }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <!-- paginas -->
+  <div class="paginacion">
+    <span class="texto-suave">
+      Página {{ pagina() }} de {{ totalPaginas() }} · {{ total() }} movimiento(s)
+    </span>
+    <div class="paginacion-botones">
+      <button type="button" class="btn btn-secundario btn-sm" (click)="irAPagina(pagina() - 1)" [disabled]="pagina() <= 1">
+        ← Anterior
+      </button>
+      <button type="button" class="btn btn-secundario btn-sm" (click)="irAPagina(pagina() + 1)" [disabled]="pagina() >= totalPaginas()">
+        Siguiente →
+      </button>
+    </div>
+  </div>
+}
+
+<!-- formulario de registrar -->
+<app-modal titulo="Registrar movimiento" [abierto]="modalAbierto()" tamano="grande" (cerrar)="cerrarModal()">
+  @if (errorForm()) {
+    <div class="aviso aviso-peligro">{{ errorForm() }}</div>
+  }
+
+  <form [formGroup]="form" (ngSubmit)="guardar()" novalidate>
+    <!-- entrada o salida -->
+    <div class="tipo-selector" role="radiogroup" aria-label="Tipo de movimiento">
+      <button
+        type="button"
+        class="tipo-opcion tipo-entrada"
+        [class.activo]="tipoActual() === 'ENTRADA'"
+        (click)="elegirTipo('ENTRADA')"
+        role="radio"
+        [attr.aria-checked]="tipoActual() === 'ENTRADA'"
+      >
+        <strong>+ Entrada</strong>
+        <span>El stock sube</span>
+      </button>
+      <button
+        type="button"
+        class="tipo-opcion tipo-salida"
+        [class.activo]="tipoActual() === 'SALIDA'"
+        (click)="elegirTipo('SALIDA')"
+        role="radio"
+        [attr.aria-checked]="tipoActual() === 'SALIDA'"
+      >
+        <strong>− Salida</strong>
+        <span>El stock baja</span>
+      </button>
+    </div>
+
+    <div class="fila-campos">
+      <div class="campo">
+        <label for="motivo">Motivo *</label>
+        <select id="motivo" class="select" formControlName="motivo">
+          @for (m of motivosDisponibles(); track m) {
+            <option [value]="m">{{ motivoTexto[m] }}</option>
+          }
+        </select>
+        <span class="ayuda-campo">{{ ayuda() }}</span>
+      </div>
+
+      <div class="campo">
+        <label for="productoId">Producto *</label>
+        <select id="productoId" class="select" formControlName="productoId" [class.invalido]="campoInvalido('productoId')">
+          <option value="">Escoge un producto...</option>
+          @for (p of productos(); track p.id) {
+            <option [value]="p.id">{{ p.nombre }} (hay {{ p.stockActual }})</option>
+          }
+        </select>
+        @if (campoInvalido('productoId')) {
+          <span class="error-campo">Escoge un producto</span>
+        }
+      </div>
+    </div>
+
+    <div class="fila-campos">
+      <div class="campo">
+        <label for="cantidad">Cantidad *</label>
+        <input id="cantidad" class="input" type="number" min="1" step="1" formControlName="cantidad" placeholder="0" [class.invalido]="campoInvalido('cantidad')" />
+        @if (campoInvalido('cantidad')) {
+          <span class="error-campo">Número entero mayor a 0</span>
+        }
+      </div>
+
+      @if (aceptaPrecio()) {
+        <div class="campo">
+          <label for="precioUnitario">Precio de cada uno (Q)</label>
+          <input id="precioUnitario" class="input" type="number" min="0" step="0.01" formControlName="precioUnitario" [class.invalido]="campoInvalido('precioUnitario')" />
+          <span class="ayuda-campo">
+            @if (motivoActual() === 'COMPRA') {
+              Si te lo cobraron distinto, se actualiza el precio de compra del producto
+            } @else {
+              Puedes cambiarlo si hiciste descuento
+            }
+          </span>
+        </div>
+      }
+    </div>
+
+    <!-- como va a quedar el stock -->
+    @if (vistaPrevia(); as v) {
+      <div class="vista-previa" [class.vista-mala]="!v.alcanza" [class.vista-alerta]="v.alcanza && v.bajoMinimo">
+        <div>
+          Hay <strong>{{ v.antes }}</strong> → van a quedar <strong>{{ v.despues }}</strong> {{ unidades(v.despues) }}
+        </div>
+        @if (!v.alcanza) {
+          <small>No alcanza: solo hay {{ v.antes }} {{ unidades(v.antes) }}</small>
+        } @else if (v.bajoMinimo) {
+          <small>Va a quedar en su mínimo o debajo (mínimo {{ v.minimo }})</small>
+        }
+        @if (aceptaPrecio() && totalMovimiento() > 0) {
+          <small class="vista-total">Total: {{ totalMovimiento() | currency: 'GTQ' : 'symbol-narrow' }}</small>
+        }
+      </div>
+    }
+
+    @if (aceptaProveedor()) {
+      <div class="campo">
+        <label for="proveedorId">Proveedor</label>
+        <select id="proveedorId" class="select" formControlName="proveedorId">
+          <option value="">Sin proveedor</option>
+          @for (p of proveedores(); track p.id) {
+            <option [value]="p.id">{{ p.nombre }}</option>
+          }
+        </select>
+      </div>
+    }
+
+    <div class="campo">
+      <label for="nota">Nota {{ pideNota() ? '*' : '' }}</label>
+      <textarea
+        id="nota"
+        class="textarea"
+        formControlName="nota"
+        [placeholder]="pideNota() ? 'Explica qué pasó, ej. se rompieron 2 botellas al descargar' : 'Opcional'"
+        [class.invalido]="notaInvalida() || campoInvalido('nota')"
+      ></textarea>
+      @if (notaInvalida()) {
+        <span class="error-campo">Para una {{ motivoTexto[motivoActual()] | lowercase }} tienes que explicar qué pasó</span>
+      }
+    </div>
+
+    <p class="texto-tenue nota-final">
+      Los movimientos no se editan ni se borran. Si te equivocas, corrígelo con un ajuste.
+    </p>
+
+    <div class="modal-botones">
+      <button type="button" class="btn btn-secundario" (click)="cerrarModal()" [disabled]="guardando()">Cancelar</button>
+      <button type="submit" class="btn btn-primario" [disabled]="guardando() || (vistaPrevia() !== null && !vistaPrevia()!.alcanza)">
+        {{ guardando() ? 'Guardando...' : 'Registrar ' + (tipoActual() === 'ENTRADA' ? 'entrada' : 'salida') }}
+      </button>
+    </div>
+  </form>
+</app-modal>

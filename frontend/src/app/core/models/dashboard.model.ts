@@ -2,9 +2,7 @@ import { Movimiento } from './movimiento.model';
 
 export interface ProductoStockBajo {
   id: number;
-  sku: string;
   nombre: string;
-  unidad: string;
   stockActual: number;
   stockMinimo: number;
   faltan: number;
@@ -12,7 +10,7 @@ export interface ProductoStockBajo {
 }
 
 export interface TopVendido {
-  producto: { id: number; sku: string; nombre: string; unidad: string } | null;
+  producto: { id: number; nombre: string } | null;
   unidadesVendidas: number;
 }
 

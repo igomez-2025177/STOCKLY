@@ -13,8 +13,6 @@ enum TipoMovimiento {
   SALIDA
 }
 
-// el porque del movimiento, la combinacion con el tipo se valida en el backend
-// COMPRA -> solo ENTRADA | VENTA y PERDIDA -> solo SALIDA | DEVOLUCION y AJUSTE -> los dos
 enum MotivoMovimiento {
   COMPRA
   VENTA
@@ -23,45 +21,42 @@ enum MotivoMovimiento {
   AJUSTE
 }
 
-// solo pa mostrar, las cantidades siempre son enteras
-enum UnidadMedida {
-  UNIDAD
-  CAJA
-  PAQUETE
-  BOLSA
-  DOCENA
-  LIBRA
-  LITRO
-  METRO
-}
-
 model Usuario {
   id            Int          @id @default(autoincrement())
   nombre        String
   correo        String       @unique
-  password      String
+  password      String?
+  googleId      String?      @unique
   creadoEn      DateTime     @default(now())
   actualizadoEn DateTime     @updatedAt
-  movimientos   Movimiento[]
+
+  categorias  Categoria[]
+  proveedores Proveedor[]
+  productos   Producto[]
+  movimientos Movimiento[]
 
   @@map("usuarios")
 }
 
 model Categoria {
   id            Int        @id @default(autoincrement())
-  nombre        String     @unique
+  nombre        String
   descripcion   String?
   activo        Boolean    @default(true)
   creadoEn      DateTime   @default(now())
   actualizadoEn DateTime   @updatedAt
-  productos     Producto[]
+  usuarioId     Int
 
+  usuario   Usuario    @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  productos Producto[]
+
+  @@unique([usuarioId, nombre])
   @@map("categorias")
 }
 
 model Proveedor {
   id            Int          @id @default(autoincrement())
-  nombre        String       @unique
+  nombre        String
   contacto      String?
   telefono      String?
   correo        String?
@@ -69,18 +64,20 @@ model Proveedor {
   activo        Boolean      @default(true)
   creadoEn      DateTime     @default(now())
   actualizadoEn DateTime     @updatedAt
-  productos     Producto[]
-  movimientos   Movimiento[]
+  usuarioId     Int
 
+  usuario     Usuario      @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  productos   Producto[]
+  movimientos Movimiento[]
+
+  @@unique([usuarioId, nombre])
   @@map("proveedores")
 }
 
 model Producto {
   id            Int          @id @default(autoincrement())
-  sku           String       @unique
   nombre        String
   descripcion   String?
-  unidad        UnidadMedida @default(UNIDAD)
   ubicacion     String?
   precioCompra  Decimal      @default(0) @db.Decimal(10, 2)
   precioVenta   Decimal      @db.Decimal(10, 2)
@@ -89,17 +86,19 @@ model Producto {
   activo        Boolean      @default(true)
   categoriaId   Int
   proveedorId   Int?
+  usuarioId     Int
   creadoEn      DateTime     @default(now())
   actualizadoEn DateTime     @updatedAt
 
-  // Restrict = no deja borrar una categoria o proveedor que tenga productos
   categoria   Categoria    @relation(fields: [categoriaId], references: [id], onDelete: Restrict)
   proveedor   Proveedor?   @relation(fields: [proveedorId], references: [id], onDelete: Restrict)
+  usuario     Usuario      @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
   movimientos Movimiento[]
 
+  @@unique([usuarioId, nombre])
+  @@index([usuarioId, activo])
   @@index([categoriaId])
   @@index([proveedorId])
-  @@index([activo])
   @@map("productos")
 }
 
@@ -109,9 +108,7 @@ model Movimiento {
   motivo          MotivoMovimiento
   cantidad        Int
   stockResultante Int
-  // foto del precio ese dia, asi los reportes no cambian si despues sube el precio
   precioUnitario  Decimal?         @db.Decimal(10, 2)
-  referencia      String?
   nota            String?
   fecha           DateTime         @default(now())
   productoId      Int
@@ -122,10 +119,9 @@ model Movimiento {
   usuario   Usuario    @relation(fields: [usuarioId], references: [id], onDelete: Restrict)
   proveedor Proveedor? @relation(fields: [proveedorId], references: [id], onDelete: Restrict)
 
+  @@index([usuarioId, fecha])
   @@index([productoId])
-  @@index([usuarioId])
   @@index([proveedorId])
-  @@index([fecha])
   @@index([tipo, motivo])
   @@map("movimientos")
 }
