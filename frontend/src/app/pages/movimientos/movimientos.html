@@ -94,15 +94,25 @@
             </td>
             <td class="negrita">{{ m.producto.nombre }}</td>
             <td>
-              <span
-                class="badge"
-                [class.badge-exito]="m.tipo === 'ENTRADA' && m.motivo !== 'AJUSTE'"
-                [class.badge-peligro]="m.motivo === 'PERDIDA'"
-                [class.badge-info]="m.motivo === 'AJUSTE'"
-                [class.badge-neutro]="m.tipo === 'SALIDA' && m.motivo !== 'PERDIDA' && m.motivo !== 'AJUSTE'"
-              >
-                {{ m.tipo === 'ENTRADA' ? 'Entrada' : 'Salida' }} · {{ motivoTexto[m.motivo] }}
-              </span>
+              @if (esStockInicial(m)) {
+                <span
+                  class="badge"
+                  style="background-color: var(--color-lima); color: var(--color-tinta)"
+                  title="Lo que había en el estante cuando registraste el producto"
+                >
+                  Stock inicial
+                </span>
+              } @else {
+                <span
+                  class="badge"
+                  [class.badge-exito]="m.tipo === 'ENTRADA' && m.motivo !== 'AJUSTE'"
+                  [class.badge-peligro]="m.motivo === 'PERDIDA'"
+                  [class.badge-info]="m.motivo === 'AJUSTE'"
+                  [class.badge-neutro]="m.tipo === 'SALIDA' && m.motivo !== 'PERDIDA' && m.motivo !== 'AJUSTE'"
+                >
+                  {{ m.tipo === 'ENTRADA' ? 'Entrada' : 'Salida' }} · {{ motivoTexto[m.motivo] }}
+                </span>
+              }
             </td>
             <td class="derecha negrita" [class.texto-exito]="m.tipo === 'ENTRADA'">
               {{ m.tipo === 'ENTRADA' ? '+' : '−' }}{{ m.cantidad }}
@@ -117,12 +127,12 @@
             </td>
             <!-- la celda se queda normal, el flex va en el div de adentro -->
             <td class="celda-detalle">
-              @if (m.proveedor || m.nota) {
+              @if (m.proveedor || (m.nota && !esStockInicial(m))) {
                 <div class="detalle">
                   @if (m.proveedor) {
                     <span class="detalle-proveedor">{{ m.proveedor.nombre }}</span>
                   }
-                  @if (m.nota) {
+                  @if (m.nota && !esStockInicial(m)) {
                     <span class="detalle-nota" [title]="m.nota">{{ m.nota }}</span>
                   }
                 </div>
