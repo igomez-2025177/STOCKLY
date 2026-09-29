@@ -3,7 +3,7 @@ import { prisma } from "../config/prisma";
 import { AuthRequest } from "../middlewares/auth.middleware";
 
 const INCLUDE_MOVIMIENTO = {
-  producto: { select: { id: true, sku: true, nombre: true, unidad: true } },
+  producto: { select: { id: true, nombre: true } },
   usuario: { select: { id: true, nombre: true } },
   proveedor: { select: { id: true, nombre: true } },
 };
@@ -12,8 +12,10 @@ function redondear(valor: number): number {
   return Math.round(valor * 100) / 100;
 }
 
-export async function obtenerDashboard(_req: AuthRequest, res: Response) {
+export async function obtenerDashboard(req: AuthRequest, res: Response) {
   try {
+    const usuarioId = req.user!.userId;
+
     const ahora = new Date();
     const inicioHoy = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate());
     const inicioMes = new Date(ahora.getFullYear(), ahora.getMonth(), 1);
@@ -21,12 +23,10 @@ export async function obtenerDashboard(_req: AuthRequest, res: Response) {
     const [productos, totalCategorias, totalProveedores, movimientosHoy, ultimosMovimientos, masVendidos, movimientosMes] =
       await Promise.all([
         prisma.producto.findMany({
-          where: { activo: true },
+          where: { usuarioId, activo: true },
           select: {
             id: true,
-            sku: true,
             nombre: true,
-            unidad: true,
             stockActual: true,
             stockMinimo: true,
             precioCompra: true,
@@ -34,26 +34,28 @@ export async function obtenerDashboard(_req: AuthRequest, res: Response) {
             categoria: { select: { id: true, nombre: true } },
           },
         }),
-        prisma.categoria.count({ where: { activo: true } }),
-        prisma.proveedor.count({ where: { activo: true } }),
+        prisma.categoria.count({ where: { usuarioId, activo: true } }),
+        prisma.proveedor.count({ where: { usuarioId, activo: true } }),
         prisma.movimiento.findMany({
-          where: { fecha: { gte: inicioHoy } },
+          where: { usuarioId, fecha: { gte: inicioHoy } },
           select: { tipo: true, cantidad: true },
         }),
         prisma.movimiento.findMany({
+          where: { usuarioId },
           include: INCLUDE_MOVIMIENTO,
           orderBy: [{ fecha: "desc" }, { id: "desc" }],
           take: 10,
         }),
         prisma.movimiento.groupBy({
           by: ["productoId"],
-          where: { motivo: "VENTA", fecha: { gte: inicioMes } },
+          where: { usuarioId, motivo: "VENTA", fecha: { gte: inicioMes } },
           _sum: { cantidad: true },
           orderBy: { _sum: { cantidad: "desc" } },
           take: 5,
         }),
         prisma.movimiento.findMany({
           where: {
+            usuarioId,
             fecha: { gte: inicioMes },
             motivo: { in: ["VENTA", "COMPRA", "PERDIDA"] },
           },
@@ -66,9 +68,7 @@ export async function obtenerDashboard(_req: AuthRequest, res: Response) {
       .sort((a, b) => a.stockActual - b.stockActual)
       .map((p) => ({
         id: p.id,
-        sku: p.sku,
         nombre: p.nombre,
-        unidad: p.unidad,
         stockActual: p.stockActual,
         stockMinimo: p.stockMinimo,
         faltan: p.stockMinimo - p.stockActual,
@@ -89,10 +89,11 @@ export async function obtenerDashboard(_req: AuthRequest, res: Response) {
       }
     }
 
+    // le ponemos nombre a los mas vendidos
     const idsVendidos = masVendidos.map((v) => v.productoId);
     const productosVendidos = await prisma.producto.findMany({
-      where: { id: { in: idsVendidos } },
-      select: { id: true, sku: true, nombre: true, unidad: true },
+      where: { usuarioId, id: { in: idsVendidos } },
+      select: { id: true, nombre: true },
     });
 
     const topVendidos = masVendidos.map((v) => ({

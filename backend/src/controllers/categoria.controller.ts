@@ -7,21 +7,27 @@ function parseId(value: unknown): number | null {
   return Number.isInteger(id) && id > 0 ? id : null;
 }
 
-async function buscarPorNombre(nombre: string, excluirId?: number) {
+async function buscarPorNombre(usuarioId: number, nombre: string, excluirId?: number) {
   return prisma.categoria.findFirst({
     where: {
+      usuarioId,
       nombre: { equals: nombre, mode: "insensitive" },
       ...(excluirId ? { NOT: { id: excluirId } } : {}),
     },
   });
 }
 
+async function buscarPropia(usuarioId: number, id: number) {
+  return prisma.categoria.findFirst({ where: { id, usuarioId } });
+}
+
 export async function listarCategorias(req: AuthRequest, res: Response) {
   try {
+    const usuarioId = req.user!.userId;
     const todas = req.query.todas === "true";
 
     const categorias = await prisma.categoria.findMany({
-      where: todas ? {} : { activo: true },
+      where: { usuarioId, ...(todas ? {} : { activo: true }) },
       orderBy: { nombre: "asc" },
       include: { _count: { select: { productos: true } } },
     });
@@ -35,14 +41,15 @@ export async function listarCategorias(req: AuthRequest, res: Response) {
 
 export async function obtenerCategoria(req: AuthRequest, res: Response) {
   try {
+    const usuarioId = req.user!.userId;
     const id = parseId(req.params.id);
 
     if (!id) {
       return res.status(400).json({ error: "Id inválido" });
     }
 
-    const categoria = await prisma.categoria.findUnique({
-      where: { id },
+    const categoria = await prisma.categoria.findFirst({
+      where: { id, usuarioId },
       include: { _count: { select: { productos: true } } },
     });
 
@@ -59,6 +66,7 @@ export async function obtenerCategoria(req: AuthRequest, res: Response) {
 
 export async function crearCategoria(req: AuthRequest, res: Response) {
   try {
+    const usuarioId = req.user!.userId;
     const { nombre, descripcion } = req.body;
 
     if (!nombre || !String(nombre).trim()) {
@@ -66,8 +74,7 @@ export async function crearCategoria(req: AuthRequest, res: Response) {
     }
 
     const nombreLimpio = String(nombre).trim();
-
-    const existente = await buscarPorNombre(nombreLimpio);
+    const existente = await buscarPorNombre(usuarioId, nombreLimpio);
 
     if (existente) {
       if (!existente.activo) {
@@ -84,6 +91,7 @@ export async function crearCategoria(req: AuthRequest, res: Response) {
       data: {
         nombre: nombreLimpio,
         descripcion: descripcion ? String(descripcion).trim() : null,
+        usuarioId,
       },
     });
 
@@ -96,6 +104,7 @@ export async function crearCategoria(req: AuthRequest, res: Response) {
 
 export async function actualizarCategoria(req: AuthRequest, res: Response) {
   try {
+    const usuarioId = req.user!.userId;
     const id = parseId(req.params.id);
 
     if (!id) {
@@ -108,14 +117,14 @@ export async function actualizarCategoria(req: AuthRequest, res: Response) {
       return res.status(400).json({ error: "El nombre es obligatorio" });
     }
 
-    const categoria = await prisma.categoria.findUnique({ where: { id } });
+    const categoria = await buscarPropia(usuarioId, id);
 
     if (!categoria) {
       return res.status(404).json({ error: "Categoría no encontrada" });
     }
 
     const nombreLimpio = String(nombre).trim();
-    const repetida = await buscarPorNombre(nombreLimpio, id);
+    const repetida = await buscarPorNombre(usuarioId, nombreLimpio, id);
 
     if (repetida) {
       return res.status(409).json({ error: `Ya existe otra categoría llamada "${repetida.nombre}"` });
@@ -138,6 +147,7 @@ export async function actualizarCategoria(req: AuthRequest, res: Response) {
 
 export async function cambiarEstadoCategoria(req: AuthRequest, res: Response) {
   try {
+    const usuarioId = req.user!.userId;
     const id = parseId(req.params.id);
 
     if (!id) {
@@ -150,7 +160,7 @@ export async function cambiarEstadoCategoria(req: AuthRequest, res: Response) {
       return res.status(400).json({ error: "El campo activo debe ser true o false" });
     }
 
-    const categoria = await prisma.categoria.findUnique({ where: { id } });
+    const categoria = await buscarPropia(usuarioId, id);
 
     if (!categoria) {
       return res.status(404).json({ error: "Categoría no encontrada" });
@@ -185,14 +195,15 @@ export async function cambiarEstadoCategoria(req: AuthRequest, res: Response) {
 
 export async function eliminarCategoria(req: AuthRequest, res: Response) {
   try {
+    const usuarioId = req.user!.userId;
     const id = parseId(req.params.id);
 
     if (!id) {
       return res.status(400).json({ error: "Id inválido" });
     }
 
-    const categoria = await prisma.categoria.findUnique({
-      where: { id },
+    const categoria = await prisma.categoria.findFirst({
+      where: { id, usuarioId },
       include: { _count: { select: { productos: true } } },
     });
 

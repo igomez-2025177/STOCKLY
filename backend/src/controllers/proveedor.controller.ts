@@ -33,21 +33,27 @@ function validarDatos(correo: string | null, telefono: string | null, nit: strin
   return null;
 }
 
-async function buscarPorNombre(nombre: string, excluirId?: number) {
+async function buscarPorNombre(usuarioId: number, nombre: string, excluirId?: number) {
   return prisma.proveedor.findFirst({
     where: {
+      usuarioId,
       nombre: { equals: nombre, mode: "insensitive" },
       ...(excluirId ? { NOT: { id: excluirId } } : {}),
     },
   });
 }
 
+async function buscarPropio(usuarioId: number, id: number) {
+  return prisma.proveedor.findFirst({ where: { id, usuarioId } });
+}
+
 export async function listarProveedores(req: AuthRequest, res: Response) {
   try {
+    const usuarioId = req.user!.userId;
     const todos = req.query.todos === "true";
 
     const proveedores = await prisma.proveedor.findMany({
-      where: todos ? {} : { activo: true },
+      where: { usuarioId, ...(todos ? {} : { activo: true }) },
       orderBy: { nombre: "asc" },
       include: { _count: { select: { productos: true } } },
     });
@@ -61,14 +67,15 @@ export async function listarProveedores(req: AuthRequest, res: Response) {
 
 export async function obtenerProveedor(req: AuthRequest, res: Response) {
   try {
+    const usuarioId = req.user!.userId;
     const id = parseId(req.params.id);
 
     if (!id) {
       return res.status(400).json({ error: "Id inválido" });
     }
 
-    const proveedor = await prisma.proveedor.findUnique({
-      where: { id },
+    const proveedor = await prisma.proveedor.findFirst({
+      where: { id, usuarioId },
       include: { _count: { select: { productos: true, movimientos: true } } },
     });
 
@@ -85,6 +92,7 @@ export async function obtenerProveedor(req: AuthRequest, res: Response) {
 
 export async function crearProveedor(req: AuthRequest, res: Response) {
   try {
+    const usuarioId = req.user!.userId;
     const { nombre } = req.body;
 
     if (!nombre || !String(nombre).trim()) {
@@ -103,7 +111,7 @@ export async function crearProveedor(req: AuthRequest, res: Response) {
       return res.status(400).json({ error: errorValidacion });
     }
 
-    const existente = await buscarPorNombre(nombreLimpio);
+    const existente = await buscarPorNombre(usuarioId, nombreLimpio);
 
     if (existente) {
       if (!existente.activo) {
@@ -117,7 +125,7 @@ export async function crearProveedor(req: AuthRequest, res: Response) {
     }
 
     const proveedor = await prisma.proveedor.create({
-      data: { nombre: nombreLimpio, contacto, telefono, correo, nit },
+      data: { nombre: nombreLimpio, contacto, telefono, correo, nit, usuarioId },
     });
 
     return res.status(201).json({ message: "Proveedor creado correctamente", proveedor });
@@ -129,6 +137,7 @@ export async function crearProveedor(req: AuthRequest, res: Response) {
 
 export async function actualizarProveedor(req: AuthRequest, res: Response) {
   try {
+    const usuarioId = req.user!.userId;
     const id = parseId(req.params.id);
 
     if (!id) {
@@ -141,7 +150,7 @@ export async function actualizarProveedor(req: AuthRequest, res: Response) {
       return res.status(400).json({ error: "El nombre es obligatorio" });
     }
 
-    const proveedor = await prisma.proveedor.findUnique({ where: { id } });
+    const proveedor = await buscarPropio(usuarioId, id);
 
     if (!proveedor) {
       return res.status(404).json({ error: "Proveedor no encontrado" });
@@ -159,7 +168,7 @@ export async function actualizarProveedor(req: AuthRequest, res: Response) {
       return res.status(400).json({ error: errorValidacion });
     }
 
-    const repetido = await buscarPorNombre(nombreLimpio, id);
+    const repetido = await buscarPorNombre(usuarioId, nombreLimpio, id);
 
     if (repetido) {
       return res.status(409).json({ error: `Ya existe otro proveedor llamado "${repetido.nombre}"` });
@@ -179,6 +188,7 @@ export async function actualizarProveedor(req: AuthRequest, res: Response) {
 
 export async function cambiarEstadoProveedor(req: AuthRequest, res: Response) {
   try {
+    const usuarioId = req.user!.userId;
     const id = parseId(req.params.id);
 
     if (!id) {
@@ -191,7 +201,7 @@ export async function cambiarEstadoProveedor(req: AuthRequest, res: Response) {
       return res.status(400).json({ error: "El campo activo debe ser true o false" });
     }
 
-    const proveedor = await prisma.proveedor.findUnique({ where: { id } });
+    const proveedor = await buscarPropio(usuarioId, id);
 
     if (!proveedor) {
       return res.status(404).json({ error: "Proveedor no encontrado" });
@@ -224,17 +234,17 @@ export async function cambiarEstadoProveedor(req: AuthRequest, res: Response) {
   }
 }
 
-
 export async function eliminarProveedor(req: AuthRequest, res: Response) {
   try {
+    const usuarioId = req.user!.userId;
     const id = parseId(req.params.id);
 
     if (!id) {
       return res.status(400).json({ error: "Id inválido" });
     }
 
-    const proveedor = await prisma.proveedor.findUnique({
-      where: { id },
+    const proveedor = await prisma.proveedor.findFirst({
+      where: { id, usuarioId },
       include: { _count: { select: { productos: true, movimientos: true } } },
     });
 

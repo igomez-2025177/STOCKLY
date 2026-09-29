@@ -115,14 +115,18 @@
                 <span class="texto-tenue">—</span>
               }
             </td>
-            <td class="detalle">
-              @if (m.proveedor) {
-                <span>{{ m.proveedor.nombre }}</span>
-              }
-              @if (m.nota) {
-                <span class="texto-suave nota">{{ m.nota }}</span>
-              }
-              @if (!m.proveedor && !m.nota) {
+            <!-- la celda se queda normal, el flex va en el div de adentro -->
+            <td class="celda-detalle">
+              @if (m.proveedor || m.nota) {
+                <div class="detalle">
+                  @if (m.proveedor) {
+                    <span class="detalle-proveedor">{{ m.proveedor.nombre }}</span>
+                  }
+                  @if (m.nota) {
+                    <span class="detalle-nota" [title]="m.nota">{{ m.nota }}</span>
+                  }
+                </div>
+              } @else {
                 <span class="texto-tenue">—</span>
               }
             </td>
